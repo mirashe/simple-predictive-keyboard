@@ -12,7 +12,7 @@ import heapq
 path = '1661.txt'
 text = open(path, encoding="utf8").read().lower()
 
-print('corpus length:', len(text))
+# print('corpus length:', len(text))
 
 # Split the entire dataset into each word
 tokenizer = RegexpTokenizer(r'\w+')
@@ -30,8 +30,8 @@ for i in range(len(words) - WORD_LENGTH):
     prev_words.append(words[i:i + WORD_LENGTH])
     next_words.append(words[i + WORD_LENGTH])
 
-print(prev_words[0])
-print(next_words[0])
+# print(prev_words[0])
+# print(next_words[0])
 
 # Generating feature vectors (by using one-hot encoding)
 X = np.zeros((len(prev_words), WORD_LENGTH, len(unique_words)), dtype=bool)
@@ -41,7 +41,7 @@ for i, each_words in enumerate(prev_words):
         X[i, j, unique_word_index[each_word]] = 1
     Y[i, unique_word_index[next_words[i]]] = 1
 
-print(X[0][0])
+# print(X[0][0])
 
 # Building the model
 model = Sequential()
@@ -69,7 +69,7 @@ def prepare_input(itext):
     return x
 
 
-prepare_input("It is not a lack".lower())
+# prepare_input("It is not a lack".lower())
 
 # Best possibles
 def sample(preds, top_n=3):
