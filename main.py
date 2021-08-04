@@ -10,7 +10,7 @@ import heapq
 
 # Loading the dataset
 path = '1661.txt'
-text = open(path).read().lower()
+text = open(path, encoding="utf8").read().lower()
 
 print('corpus length:', len(text))
 
