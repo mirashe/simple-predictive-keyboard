@@ -82,7 +82,7 @@ def plot_history():
     plt.show()
 
 
-plot_history(history)
+plot_history()
 
 
 # Prediction
