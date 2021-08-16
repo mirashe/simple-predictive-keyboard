@@ -52,13 +52,13 @@ model.add(Activation('softmax'))
 # Training
 optimizer = RMSprop(lr=0.01)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-#history = model.fit(X, Y, validation_split=0.05, batch_size=128, epochs=2, shuffle=True).history
+# history = model.fit(X, Y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
 
 # Saving the trained model
 # model.save('word-one-hot-model.h5')
-# pickle.dump(history, open("word-one-hot-history.p", "wb"))
-model = load_model('word-one-hot-model.h5')
-history = pickle.load(open("word-one-hot-history.p", "rb"))
+# pickle.dump(history, open("word-one-hot-history2.p", "wb"))
+# model = load_model('word-one-hot-model.h5')
+history = pickle.load(open("word-one-hot-history2.p", "rb"))
 
 
 def plot_history():
