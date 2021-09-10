@@ -90,9 +90,9 @@ history = model.fit(  prev_words_embedding_train
 
 # Saving the trained model
 model.save('word-embedding-model.h5')
-pickle.dump(history, open("word-embedding-history2.p", "wb"))
+pickle.dump(history, open("word-embedding-history.p", "wb"))
 # model = load_model('word-one-hot-model.h5')
-# history = pickle.load(open("word-one-hot-history2.p", "rb"))
+# history = pickle.load(open("word-one-hot-history.p", "rb"))
 
 
 def plot_history():

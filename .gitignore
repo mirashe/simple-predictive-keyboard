@@ -1,2 +1,3 @@
 .idea/
-*.h5
+word-embedding-model.h5
+word-one-hot-model.h5

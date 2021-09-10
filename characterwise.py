@@ -63,20 +63,30 @@ model = load_model('characterwise-model.h5')
 history = pickle.load(open("characterwise-history.p", "rb"))
 
 
-def predict_completions(sentence_40):
+def predict_completions(sentence_40, prediction_length):
     sentence_matrix = np.zeros((1, SEQUENCE_LENGTH, len(chars)), dtype=np.bool)
     for t, char in enumerate(sentence_40):
         sentence_matrix[0, t, char_indices[char]] = 1
 
-    predictions_for_first_sample = model.predict(sentence_matrix)[0]
-    number_of_guesses = 3
-    best_predictions_indices = heapq.nlargest(number_of_guesses, range(predictions_for_first_sample.size), predictions_for_first_sample.take)
-    best_predictions = np.array(chars)[best_predictions_indices]
+    predicted_text = ""
 
-    return best_predictions
+    for prediction_index in range(prediction_length):
+        predictions_for_first_sample = model.predict(sentence_matrix)[0]
+        number_of_guesses = 1
+        best_predictions_indices = heapq.nlargest(number_of_guesses, range(predictions_for_first_sample.size),
+                                                  predictions_for_first_sample.take)
+        best_predictions = np.array(chars)[best_predictions_indices]
+        predicted_text += best_predictions[0]
+
+        new_char_matrix = np.zeros((1, 1, len(chars)), dtype=np.bool)
+        new_char_matrix[0, 0, char_indices[best_predictions[0]]] = 1
+
+        sentence_matrix = np.concatenate((sentence_matrix[0:1, 1:SEQUENCE_LENGTH, :], new_char_matrix), axis=1)
+
+    return predicted_text
 
 
-print("Prediction sample: ", predict_completions(text[0:40]))
+print("Prediction sample: ", predict_completions(text[0:40], 120))
 
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
