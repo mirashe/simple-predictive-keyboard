@@ -17,12 +17,14 @@ from pylab import rcParams
 
 # %matplotlib inline
 
+input_file_path = 'nietzsche.txt'
+model_files_title = 'characterwise'
+
 sns.set(style='whitegrid', palette='muted', font_scale=1.5)
 
 rcParams['figure.figsize'] = 12, 5
 
-path = 'nietzsche.txt'
-text = open(path).read().lower()
+text = open(input_file_path).read().lower()
 print('corpus length:', len(text))
 
 chars = sorted(list(set(text)))
@@ -55,15 +57,13 @@ model.add(Activation('softmax'))
 optimizer = RMSprop(lr=0.01)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-file_title = 'characterwise'
-
 history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
 
-model.save(file_title + '-model.h5')
-pickle.dump(history, open(file_title + '-history.p', "wb"))
+model.save(model_files_title + '-model.h5')
+pickle.dump(history, open(model_files_title + '-history.p', "wb"))
 
-model = load_model(file_title + '-model.h5')
-history = pickle.load(open(file_title + "-history.p", "rb"))
+model = load_model(model_files_title + '-model.h5')
+history = pickle.load(open(model_files_title + "-history.p", "rb"))
 
 
 def predict_completions(sentence_40, prediction_length):
