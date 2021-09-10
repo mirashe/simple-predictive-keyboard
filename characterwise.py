@@ -54,13 +54,16 @@ model.add(Activation('softmax'))
 
 optimizer = RMSprop(lr=0.01)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-# history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
 
-# model.save('characterwise-model.h5')
-# pickle.dump(history, open("characterwise-history.p", "wb"))
+file_title = 'characterwise'
 
-model = load_model('characterwise-model.h5')
-history = pickle.load(open("characterwise-history.p", "rb"))
+history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
+
+model.save(file_title + '-model.h5')
+pickle.dump(history, open(file_title + '-history.p', "wb"))
+
+model = load_model(file_title + '-model.h5')
+history = pickle.load(open(file_title + "-history.p", "rb"))
 
 
 def predict_completions(sentence_40, prediction_length):
