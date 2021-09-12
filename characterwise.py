@@ -1,7 +1,5 @@
 import numpy as np
-np.random.seed(42)
 import tensorflow as tf
-tf.random.set_seed(42)
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation
 from keras.layers import LSTM, Dropout
@@ -10,15 +8,19 @@ from keras.layers.core import Dense, Activation, Dropout, RepeatVector
 from keras.optimizers import RMSprop
 import matplotlib.pyplot as plt
 import pickle
-import sys
 import heapq
 import seaborn as sns
 from pylab import rcParams
 
 # %matplotlib inline
 
+should_save = not True
+should_load = True
 input_file_path = 'nietzsche.txt'
-model_files_title = 'characterwise'
+model_files_title = 'characterwise-nietzsche'
+
+np.random.seed(42)
+tf.random.set_seed(42)
 
 sns.set(style='whitegrid', palette='muted', font_scale=1.5)
 
@@ -49,21 +51,26 @@ for i, sentence in enumerate(sentences):
         X[i, t, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
-model = Sequential()
-model.add(LSTM(128, input_shape=(SEQUENCE_LENGTH, len(chars))))
-model.add(Dense(len(chars)))
-model.add(Activation('softmax'))
+if should_load:
+    model = load_model(model_files_title + '-model.h5')
+    history = pickle.load(open(model_files_title + "-history.p", "rb"))
+else:
+    model = Sequential()
+    model.add(LSTM(128, input_shape=(SEQUENCE_LENGTH, len(chars))))
+    model.add(Dense(len(chars)))
+    model.add(Activation('softmax'))
 
-optimizer = RMSprop(lr=0.01)
-model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    optimizer = RMSprop(lr=0.01)
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
 
-model.save(model_files_title + '-model.h5')
-pickle.dump(history, open(model_files_title + '-history.p', "wb"))
 
-model = load_model(model_files_title + '-model.h5')
-history = pickle.load(open(model_files_title + "-history.p", "rb"))
+
+    history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
+
+    if should_save:
+        model.save(model_files_title + '-model.h5')
+        pickle.dump(history, open(model_files_title + '-history.p', "wb"))
 
 
 def predict_completions(sentence_40, prediction_length):
@@ -89,7 +96,9 @@ def predict_completions(sentence_40, prediction_length):
     return predicted_text
 
 
-print("Prediction sample: ", predict_completions(text[0:40], 120))
+input_sample = text[20:60]
+print("Input sample: ", input_sample)
+print("Prediction sample: ", predict_completions(input_sample, 120))
 
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
