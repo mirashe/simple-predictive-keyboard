@@ -102,8 +102,9 @@ def predict_completions(sentence_40, prediction_length):
     return predicted_text
 
 
-input_sample = text[20:60]
-print("Input sample: ", input_sample)
+sample_start_position = 32
+input_sample = text[sample_start_position: SEQUENCE_LENGTH + sample_start_position]
+print("Input sample: \r\n", input_sample)
 print("Prediction sample: ", predict_completions(input_sample, 120))
 
 plt.figure(figsize=(12, 5))
