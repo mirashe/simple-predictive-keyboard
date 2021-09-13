@@ -1,0 +1,2954 @@
+variables
+  string          INDENTATION              
+  boolean         LOGGING                  
+  string          SAVED_PUTMESS            
+  string          WORKINGDIR
+  string          PID            
+endvariables
+#Comment ----------------------------------------------
+#Comment start_of_references
+#ifdefined TEMPLATENAME
+#info symbol TEMPLATENAME is already or also defined as a global or local constant
+#endif
+#define TEMPLATENAME=
+#Comment 
+
+#Comment end_of_references
+
+
+#Comment ----------------------------------------------
+#Comment start_of_mappings
+#Comment end_of_mappings
+
+
+#Comment ----------------------------------------------
+#Comment start_of_symbols
+#Comment end_of_symbols
+
+
+#Comment ----------------------------------------------
+
+
+
+#define DEF_INDENTATION=3
+#define DEF_INDENTSTRING = "   "
+#define RESULTDMPFILE = findresults.txt
+#define RESULTLOGFILE = findresultsLogFile.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation init
+                $logging$ = 0
+                $indentation$ = ""
+end
+
+
+
+
+
+
+
+
+
+
+operation pubPutmess
+params
+                string szMessage : IN
+endparams
+                if ($logging$)
+                                putmess "%%$indentation$%%%%%szMessage%%%"
+                endif
+
+                if (szMessage = "DUMPIT")
+                                putmess "%%^******************* Verbose Logging Start *******************"
+                                putmess $saved_putmess$
+                                putmess "%%^******************* Verbose Logging End *******************%%^"
+                                $saved_putmess$ = ""
+                elseif (szMessage = "CLEANIT")
+                                $saved_putmess$ = ""
+                else
+                                $saved_putmess$ = $concat($saved_putmess$, "%%^", szMessage)
+                endif
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation privNormDatabasePath
+params
+   
+   
+endparams
+variables
+                numeric i
+   numeric iLen
+   numeric iCount
+endvariables
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<privNormDatabasePath>=============")
+activate $instancename.pubPutmess("szCurrentDBMS = %%szCurrentDBMS%%%") 
+iLen = $length(szCurrentDBMS)
+szNormalized  = szCurrentDBMS
+i = 1
+iCount = 0
+while (i <= iLen )
+    if (szCurrentDBMS[i:1] == ":")      
+       iCount = iCount + 1
+    endif
+    i = i + 1
+endwhile
+if (iCount < 2 && szCurrentDBMS[1:3]!="ORA")
+   szNormalized  = "%%szNormalized%%%:"
+endif
+activate $instancename.pubPutmess("Colons=%%iCount%%% szNormalized  = %%szNormalized%%%") 
+activate $instancename.pubPutmess("=========<privNormDatabasePath>=====[ends]=")
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+end
+
+
+operation privValidateParams
+params 
+  string szDumpTool     : IN
+  
+  
+  
+  
+endparams
+
+if (szSourceDir == "")
+                putmess "Please call this operation with test data directory"
+   iReturn = -1
+   return -1
+endif
+
+if (szDataBaseName == "")
+                putmess "Please call this operation with database mnemonic ORA | SYB | SOL etc"
+   iReturn = -1
+   return
+endif
+
+if (szDumpTool == "")
+                putmess "2e param Please define a dumptool to be used: procdump.exe -ma etc"
+   iReturn = -1
+   return
+endif
+
+if (szUserPassword == "")
+                putmess "3e param Please define %%"username%%" or %%"password%%" litterally!"
+   iReturn = -1
+   return
+endif
+end
+
+operation privGetAsnSettingsChapter
+params
+   
+   
+
+   boolean bShowLogging :IN 
+   string szSettingsChapter    : OUT
+endparams
+variables
+   string logfile
+   boolean bLogging
+endvariables
+szSettingsChapter = ""
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<privGetAsnSettingsChapter>=============")
+
+szSettingsChapter = "%%^[SETTINGS]%%^"
+logfile = $concat(ssPutmessLogFileName, ".log")
+szSettingsChapter = $concat(szSettingsChapter, "$putmess_logfile=", logfile, "%%^")
+
+logfile = $concat(ssPutmessLogFileName, "_t.log")
+szSettingsChapter = $concat(szSettingsChapter, "$transcript_logfile=", logfile, "%%^")
+
+szSettingsChapter = $concat(szSettingsChapter, "$ioprint=3327", "%%^")
+szSettingsChapter = $concat(szSettingsChapter, szAdditionalSettings, "%%^")
+szSettingsChapter = $concat(szSettingsChapter, "$search_resources = resources_only", "%%^")
+
+
+
+szSettingsChapter = $concat(szSettingsChapter, "$resources_output = dummy_not_required.uar", "%%^")
+szSettingsChapter = $concat(szSettingsChapter, "$century_break=30", "%%^")
+szSettingsChapter = $concat(szSettingsChapter, "$maxfiles=40", "%%^")
+
+activate $instancename.pubPutmess("szSettingsChapter =%%szSettingsChapter%%%")
+activate $instancename.pubPutmess("=========<privGetAsnSettingsChapter>===[ ends ]====")
+$logging$ = bLogging
+end
+
+operation privGetPathParts
+params
+   string szDefValue     : OUT
+   string szdbmsMnemonic : OUT
+   string databaseName   : OUT
+   boolean bShowLogging  :IN 
+endparams
+
+variables
+   
+   string szDefpath
+   numeric lReturn 
+   string szOldLogonString
+   numeric iLen
+   boolean bLogging   
+endvariables
+
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<privGetPathParts>=============")
+szDefpath = $assignments("PATHS", "$DEF")
+
+
+
+
+
+szDefpath = $assignments("PATHS", szDefValue)
+
+
+
+
+
+activate $instancename.pubPutmess( "split[3] %%RightPart%%% on %%":%%"")
+
+
+
+
+
+
+activate $instancename.pubPutmess("=========<privPathParts>===[ ends ]====")
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+$logging$ = bLogging
+end
+
+
+operation privGetDriverSettingsChapter
+params
+   
+   boolean bShowLogging :IN 
+   string szSettingsChapter    : OUT
+endparams
+variables
+   String  szSetting
+   String  szDriverParams
+   boolean bLogging
+endvariables
+
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<privGetDriverSettingsChapter>=============")
+activate $instancename.pubPutmess("szdbmsMnemonic = %%szdbmsMnemonic%%%")
+if (szdbmsMnemonic = "")
+                putmess "ERROR: ===================================================================="
+                putmess "ERROR: privGetDriverSettingsChapter Routine does not have a dbms mnemonic!!"
+                putmess "ERROR: ===================================================================="
+   return
+endif
+szSetting = $assignments("driver_settings",szdbmsMnemonic)
+activate $instancename.pubPutmess("%%szSetting%%% = $assignments(driver_settings,%%szdbmsMnemonic%%%)")
+
+szSetting      = $assignments("driver_settings",szdbmsMnemonic)
+szDriverParams = $assignments("driver_settings","USYS$%%szdbmsMnemonic%%%_PARAMS")
+activate $instancename.pubPutmess("%%szDriverParams%%% = $assignments(driver_settings,USYS$%%szdbmsMnemonic%%%_PARAMS)")
+szSettingsChapter = "%%^[driver_settings]%%^%%szSetting%%%%%^%%szDriverParams%%%%%^"
+activate $instancename.pubPutmess("szSettingsChapter =%%szSettingsChapter%%%")
+activate $instancename.pubPutmess("=========<privGetDriverSettingsChapter>===[ ends ]====")
+$logging$ = bLogging
+end
+
+
+
+
+operation privGetLogicalsSettingsChapter
+params
+   boolean bShowLogging :IN 
+   string szLogicalsChapter    : OUT
+endparams
+variables
+   String  szTestDataDirectory 
+   boolean bLogging
+endvariables
+
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<privGetLogicalsSettingsChapter>=============")
+
+
+activate $instancename.pubGetTestDataDir(szTestDataDirectory, "")
+
+szLogicalsChapter = "%%^[logicals]%%^"
+szLogicalsChapter = $concat(szLogicalsChapter, "rt_testdata_directory_", $$rt_env_ostype, " = ")
+szLogicalsChapter = $concat(szLogicalsChapter, szTestDataDirectory, "%%^")
+
+activate $instancename.pubPutmess("szLogicalsChapter =%%szLogicalsChapter%%%")
+activate $instancename.pubPutmess("=========<privGetLogicalsSettingsChapter>===[ ends ]====")
+$logging$ = bLogging
+end
+
+
+
+operation privResourcesSettingsChapter
+params
+   boolean bShowLogging :IN 
+   string szResourcesChapter    : OUT
+endparams
+variables
+  String  szResourceList
+   String  szResources 
+   boolean bLogging
+  string vIdPart,vRepPart
+  numeric vIndex
+endvariables
+
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<privResourcesSettingsChapter>=============")
+szResourceList= $assignments("resources","")
+activate $instancename.pubPutmess("%%szResourceList%%% = $assignments(resources,)")
+szResources = ""
+forlist/id vIdPart, vRepPart, vIndex in szResourceList
+  
+  
+  
+  
+   activate $instancename.pubPutmess("vRepPart = %%vRepPart%%%")
+   szResources = "%%(szResources)%%^%%(vRepPart)"
+endfor
+
+
+
+
+szResources = $concat(szResources, "%%^", "usys:idf.uar")
+
+szResourcesChapter = "%%^[resources]%%(szResources)%%^"
+activate $instancename.pubPutmess("szResourcesChapter=%%szResourcesChapter%%%")
+activate $instancename.pubPutmess("=========<privResourcesSettingsChapter>===[ ends ]====")
+$logging$ = bLogging
+end
+
+
+
+
+
+
+
+operation pubGetLogonString
+params 
+                
+                boolean p_showLogging  : IN 
+                
+endparams
+variables
+                
+                numeric v_posCR 
+                boolean v_logging
+                numeric v_len
+endvariables
+
+v_logging = $logging$
+$logging$ = p_showLogging
+
+activate $instancename.pubPutmess("========<pubGetLogonString>======")
+activate $instancename.pubPutmess("Get the logon string from the enc file")
+
+p_logonString = ""
+
+
+v_fullPathEncFile = $concat($workingdir$, p_encFileName, ".enc")
+activate $instancename.pubPutmess("Loading %%v_fullPathEncFile%%% for username and password string <username>|<password>")
+lfileload/text v_fullPathEncFile, p_logonString
+if ($status < 0 )
+    $$rt_result = $concat($$rt_result, "Logon string file: ", v_fullPathEncFile, " cannot be opened", "%%^")
+endif
+
+
+$logging$ = v_logging
+
+
+if (p_logonString != "")
+                v_posCR = $scan(p_logonString,"%%^")
+                if (v_posCR > 0)
+                   p_logonString = p_logonString[1:v_posCR-1]
+                endif
+endif
+
+
+activate $instancename.pubPutmess("p_logonString=%%p_logonString%%%")
+
+activate $instancename.pubPutmess(" ")
+activate $instancename.pubPutmess("========>pubGetLogonString ends<======")
+
+v_len = $length($indentation$)
+v_len -= <DEF_INDENTATION>
+$indentation$ = $indentation$[1:v_len]
+
+return
+end
+
+
+operation pubGetTestDataDir
+                params
+                                string p_testdatadir : OUT
+                                string p_subdir : IN
+                endparams
+
+                if ($$rt_env_ostype = "")
+                                call rt_environment()
+                endif
+
+                selectcase $$rt_env_ostype
+                                case "W32"
+                                                p_testdatadir = $logical("rt_testdata_directory_w32")
+                                                if (p_testdatadir != "" & p_subdir != "")
+                                                                p_testdatadir  = $concat(p_testdatadir, p_subdir)
+                                                endif
+                                elsecase
+                                                
+                                                p_testdatadir = ""
+                endselectcase
+end
+
+
+operation pubSetLogging
+params
+                Boolean bLogging : IN
+endparams
+                $logging$ = bLogging
+end
+
+
+
+operation pubCreateDumpfile
+params
+  
+endparams
+variables
+  string v_pid
+endvariables
+
+if($PID$ != "")
+                v_pid = $PID$
+else
+                v_pid = $processinfo("pid")
+endif
+
+activate $instancename.pubCreateDumpfileEx(p_component_name, v_pid, 0, "")
+
+
+
+
+
+
+
+if ($workingdir$ == "")
+    putmess "Error: The working directory is not set this means the dump file"
+    putmess "is saved in the root of the current drive"
+endif
+
+return
+end
+
+
+
+
+
+operation pubCreateDumpfileEx
+params
+  
+  
+  
+  
+endparams
+variables
+  string v_dump_tool
+  string v_dump_file
+  string v_tool_path
+  string v_command_aux
+  string v_command
+  string v_path
+endvariables
+
+if (p_async == 0 && p_get_pid_from_log != "")
+  putmess "Cannot get pid from log file synchronously."
+  $$rt_result = $concat($$rt_result, "ERROR: arguments for function pubCreateDumpfileEx was not used correctly.")
+endif
+
+activate $instancename.pubGetTestDataDir(v_tool_path, "wintools\")
+v_dump_tool = "%%v_tool_path%%%procdump.exe"
+if ($lfileexists(v_dump_tool) == 0)
+  $$rt_result = $concat($$rt_result, "ERROR: I cannot find the dump tool named:%%(v_dump_tool)")
+  return
+endif
+
+
+v_dump_tool = $concat(v_dump_tool,  " -accepteula -ma -o ")
+
+if (p_component_name  == "")
+  $$rt_result = $concat($$rt_result, "ERROR: Operation pubCreateDumpfile must be called with an instancename!")
+  putmess "pubCreateDumpfile($instancename) or component name. Do not use generated names."
+  return
+endif
+
+
+
+v_path = $concat($ldir(), $workingdir$)
+if ($fileexists(v_path) == 0)
+  v_path = $workingdir$
+endif
+
+if (p_async == 1)
+  v_dump_file = $concat(v_path, p_component_name, "_async", ".dmp")
+else
+  v_dump_file = $concat(v_path, p_component_name, ".dmp")
+endif
+
+putmess "mem dump file = %%(v_dump_file)"
+
+if ($lfileexists(v_dump_file) != 0)
+  putmess "Warning: %%(v_dump_file) should not exist but was found, deleting"
+  lfiledelete v_dump_file
+  if ($status < 0)
+    putmess "Error: %%(v_dump_file) could not be deleted, cannot continue"
+    $$rt_result = $concat($$rt_result, "ERROR: Cannot delete %%(v_dump_file).")
+    return
+  endif
+endif
+
+
+
+
+
+if (p_pid == "" && p_get_pid_from_log != "")
+  
+endif
+
+v_command_aux = $concat(v_dump_tool, " ", p_pid)
+v_command_aux = $concat(v_command_aux, " ", v_dump_file)
+
+if (p_async == 1)
+  
+  activate $instancename.privCreateAsyncDumpBatch(v_command_aux, p_component_name, p_get_pid_from_log)
+  v_command = v_command_aux
+else
+  
+  v_command = $concat("#", v_command_aux)
+endif
+
+putmess "spawning %%(v_command)"
+spawn v_command
+putmess "spawn returned $status=%%($status), $result=%%($result)"
+
+return
+end
+
+
+
+
+operation privCreateAsyncDumpBatch
+params
+  string p_command            : INOUT
+  string p_component_name     : IN
+  string p_get_pid_from_log  : IN
+endparams
+variables
+  string v_file_name
+endvariables
+
+  v_file_name = $concat($ldir(), $workingdir$, "AsyncDump.bat")
+  
+  lfiledump/text "PING localhost -n 2 >NUL%%^", v_file_name
+  if (p_get_pid_from_log != "")
+    lfiledump/text/append "for /F %%"tokens=2 delims=,%%" %% a in ('findstr /I %%"pid=%%" %%(p_get_pid_from_log)') do set %%"vpid_ex=%% a %%" %%^", v_file_name
+    lfiledump/text/append "for /F %%"tokens=2 delims==%%" %% a in (%%" %vpid_ex% %%") do set %%"vpid=%% a %%" %%^", v_file_name
+  endif 
+  lfiledump/text/append p_command, v_file_name
+
+  
+  p_command = v_file_name
+
+return
+end
+
+
+
+operation pubExecBatchFile
+params  
+  
+  
+  
+  
+  
+  
+  
+endparams
+variables
+   
+   
+
+   string vStringsDumpFile
+   string vResultsFile
+
+
+
+
+
+endvariables
+
+
+if (fileType = "dmp")
+                vBatchFileName = $concat($workingdir$, v_driverName, szUserPassword, ".bat")
+                
+elseif (fileType = "log")
+                vBatchFileName = $concat($workingdir$, v_driverName, szUserPassword, "_ForLogFile.bat")
+                
+endif
+
+vFileToScan = $concat($workingdir$, szComponentName, "." , fileType)
+
+if ($lfileexists(vBatchFileName ) == 0)
+   putmess "ERROR: in operation pubExecBatchFile"
+   putmess "Batchfile: %%vBatchFileName%%% cannot be found."
+   activate $instancename.pubAppendToResult("Batchfile : %%vBatchFileName%%% cannot be found.")
+
+   putmess "Expected is a file with something like %%"find /c /i <username|password> %1 >%%$workingdir$%%%<RESULTDMPFILE>%%""
+   putmess ""
+   putmess "Are you sure you have enough rights to let the test write in the %%$workingdir$%%% folder?"
+   putmess ""
+   return
+endif
+
+if ($lfileexists(vFileToScan) == 0)
+   putmess "ERROR: in operation pubExecBatchFile"
+   putmess "Dump file named: %%(vFileToScan) cannot be found"
+   activate $instancename.pubAppendToResult("Dump file named: %%(vFileToScan) cannot be found")
+
+   putmess "Expected is a memory dump file created by the service or form under testing"
+   putmess "The component should have called the pubCreateDumpfile($instancename)"
+   putmess "The dump file is in this pubExecBatchFile operation converted with strings to create a readable text file"
+   putmess ""
+   putmess "The test spawns idf.exe with the test component %%szComponentName%%%, possibly idf could not start the"
+   putmess "component because it is not found in the rt.uar you refer to."
+   putmess "Be sure you run the test on a complete rt.asn preferably of build management, this file contains all"
+   putmess "necessary settings to run this test."
+   putmess ""
+   putmess "The component under test should run on the same settings as the RT application"
+   return 
+endif
+
+if ($lfileexists(vStringsDumpFile) == 1)
+   putmess "ERROR: in operation pubExecBatchFile"
+   putmess "Strings dumpfile named: %%(vStringsDumpFile) exists but should not"
+   activate $instancename.pubAppendToResult("Strings dumpfile named: %%(vStringsDumpFile) exists but should not")
+
+   return
+endif
+
+if (fileType = "dmp")
+                vResultsFile = $concat($workingdir$, "<RESULTDMPFILE>")
+elseif (fileType = "log")
+                vResultsFile = $concat($workingdir$, "<RESULTLOGFILE>")
+endif
+
+
+
+
+if ($lfileexists(vResultsFile) == 1)
+   putmess "ERROR: in operation pubExecBatchFile"
+   putmess "Find results file named: %%(vResultsFile) exists but should not"
+   activate $instancename.pubAppendToResult("Find results file named: %%(vResultsFile) exists but should not")
+   return
+endif
+
+
+
+
+
+vFileToScan = $concat(szComponentName, ".", fileType)
+
+if (fileType = "dmp")
+                vStringsDumpFile = $concat(szComponentName, ".txt")
+                activate $instancename.pubPutmess("spawn #%%(vBatchFileName) %%(vFileToScan) %%(vStringsDumpFile)")
+                spawn "#%%(vBatchFileName) %%(vFileToScan) %%(vStringsDumpFile)"
+elseif (fileType = "log")
+                vStringsDumpFile = $concat(szComponentName, "_LogFile.txt")
+                activate $instancename.pubPutmess("spawn #%%(vBatchFileName) %%(vFileToScan)")
+                spawn "#%%(vBatchFileName) %%(vFileToScan)"
+endif
+
+activate $instancename.pubPutmess("spawn of %%(vBatchFileName) returned, $status=%%($status), $result=%%($result)")
+
+
+vStringsDumpFile = $concat($workingdir$, vStringsDumpFile)
+if ($lfileexists(vStringsDumpFile) = 0 && fileType = "dmp")
+   putmess "ERROR: in operation pubExecBatchFile"
+   putmess "Strings dumpfile named: %%(vStringsDumpFile) not found but should exist"
+   activate $instancename.pubAppendToResult("Strings dumpfile %%(vStringsDumpFile) does not exist, spawned batch failed")
+   return
+endif
+
+end
+
+
+
+operation pubScanResultFile
+params  
+  string vResultsFile: IN 
+  string vBatchFileName: IN 
+  
+endparams
+variables
+  
+  string vLeftPart
+  string vRightPart
+  numeric vStatus
+endvariables
+
+iCount = -1
+
+
+
+if ($lfileexists(vResultsFile) == 1)
+                lfileload/text vResultsFile, vResults
+                vStatus = $split(vResults, 1, ":", vLeftPart, vRightPart)
+                if (vStatus)
+                                
+                else
+                                activate $instancename.pubAppendToResult("The file %%(vResultsFile) has unexpected format, no split on %%":%%" possible")
+                                putmess "Error: the file %%(vResultsFile) has unexpected format, no split on %%":%%" possible, contains:"
+                                putmess vResults
+                                return
+                endif
+else
+   activate $instancename.pubAppendToResult("The file %%(vResultsFile) does not exist but should contain a count")
+   putmess "ERROR:"
+   putmess "The file name %%(vResultsFile) was not created"
+   putmess "This file contains the number of passwords found and is created by the find utility"
+   putmess "It is called in the batch file named: %%vBatchFileName%%%"
+   putmess "c:\windows\system32\find.exe should be available"
+endif
+
+end
+
+
+
+operation pubScanLogFile
+params  
+  
+  
+  
+endparams
+variables
+   
+                string vRightPart
+   numeric vStatus
+   string errorFile
+endvariables
+
+iCount = -1
+vBatchFileName = "%%$workingdir$%%%%%szDataBaseName%%%log.bat"
+
+if ($lfileexists(vBatchFileName ) == 0)
+   putmess "ERROR:[pubScanLogFile] Batch or script named: %%vBatchFileName%%% cannot be found"
+   putmess "This batch file is used to scan the log file to see whether there are passwords found"
+   putmess "Expected is a file with something like %%"find /c /i <username|password> %1 >logresult.txt%%""
+   putmess "also a line which searches in the $instancename.log %%"find /c /i <username|password> %1 >logfilescan.txt%%""
+   return
+endif
+
+if ($lfileexists("%%$workingdir$%%%%%szComponentName%%%.log" ) == 0)
+   putmess "ERROR:"
+   putmess "Batch or script named: .\%%szComponentName%%%.log cannot be found"
+   putmess "Expected is a log file created by the service or form under testing"
+   putmess "The component should have had ioprint on a high level in the assignmentfile"
+   putmess "As an example:"
+   putmess "[SETTINGS]"
+   putmess "$putmess_logfile=SU00001C.log"
+   putmess "$ioprint=3327"
+   putmess " "
+   putmess "---- DID YOU RUN THE PREVIOUS TEST? --- Because the log file is not there------"
+   return 
+endif
+
+
+
+  iCount = -1
+  activate $instancename.pubPutmess("spawn #%%vBatchFileName%%% %%$workingdir$%%%%%szComponentName%%%.log")
+  spawn "#%%vBatchFileName%%% %%$workingdir$%%%%%szComponentName%%%.log"
+
+
+
+lfileload/text ".\logresult.txt",errorFile
+activate $instancename.pubPutmess("%%$workingdir$%%%logresult.txt contains:%%errorFile%%%")
+
+vStatus = $split(errorFile, 1, ": ","", vRightPart)
+if (vStatus )
+   iCount = $number(vRightPart)
+endif
+end
+
+
+operation pubScanUnifaceLogFile
+params  
+  
+  
+  
+endparams
+variables
+   
+   string vRightPart
+   numeric vStatus
+   string errorFile
+   string szTestDataDir 
+   string searchCmd
+   string szFileName 
+endvariables
+
+iCount = -1
+vBatchFileName = "%%$workingdir$%%%%%driverName%%%searchLog.bat"
+
+if ($lfileexists("%%$workingdir$%%%%%szComponentName%%%.log" ) == 0)
+   putmess "ERROR:"
+   putmess "Batch or script named: .\%%szComponentName%%%.log cannot be found"
+   putmess "Expected is a log file created by the service or form under testing"
+   putmess "The component should have had ioprint on a high level in the assignmentfile"
+   putmess "As an example:"
+   putmess "[SETTINGS]"
+   putmess "$putmess_logfile=SU00001C.log"
+   putmess "$ioprint=3327"
+   putmess " "
+   putmess "---- DID YOU RUN THE PREVIOUS TEST? --- Because the log file is not there------"
+   return 
+endif
+
+activate $instancename.pubGetTestDataDir(szTestDataDir, $workingdir$)
+
+szFileName = $concat(szTestDataDir, "asn\", driverName, "findcmd.txt") 
+
+activate $instancename.pubPutmess("#copy %%szFileName%%% %%vBatchFileName%%%")
+spawn "#cmd /c copy %%szFileName%%% %%vBatchFileName%%%" 
+lfileload/text "%%vBatchFileName%%%", searchCmd
+searchCmd = $replace(searchCmd,1, "%2", "%1")
+searchCmd = $replace(searchCmd,1, "<RESULTDMPFILE>", "logresult")
+
+lfiledump/text searchCmd,vBatchFileName
+
+if ($lfileexists(vBatchFileName ) == 0)
+   putmess "ERROR:[pubScanLogFile] Batch or script named: %%vBatchFileName%%% cannot be found"
+   putmess "This batch file is used to scan the log file to see whether there are passwords found"
+   putmess "Expected is a file with something like %%"find /c /i <username|password> %1 >logresult.txt%%""
+   putmess "also a line which searches in the $instancename.log %%"find /c /i <username|password> %1 >logfilescan.txt%%""
+   return
+endif
+
+
+
+
+  iCount = -1
+  activate $instancename.pubPutmess("spawn #%%vBatchFileName%%% %%$workingdir$%%%%%szComponentName%%%.log")
+  spawn "#%%vBatchFileName%%% %%szComponentName%%%.log"
+
+
+
+lfileload/text "%%$workingdir$%%%logresult.txt",errorFile
+activate $instancename.pubPutmess("%%$workingdir$%%%logresult.txt contains:%%errorFile%%%")
+
+vStatus = $split(errorFile, 1, ": ","", vRightPart)
+if (vStatus )
+   iCount = $number(vRightPart)
+endif
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation pubGenDBMSAsnFile
+params
+   
+   
+   boolean bShowLogging :IN 
+endparams
+
+                activate $instancename.pubGenDBMSAsnFileEx(ssPutmessLogFileName,szAdditionalSettings,bShowLogging,"")
+
+end 
+
+
+
+
+
+
+
+
+
+
+
+
+operation pubGenDBMSAsnFileEx
+params
+   
+   
+   boolean bShowLogging :IN 
+   
+endparams
+
+variables
+   string szDefValue
+   string szResourcesChapter
+   string szDriverSettings
+   string szLogicalsChapter
+   string szPathChapter
+   string szSettings
+   string szdbmsMnemonic
+   string dbmsEncFile
+   string databaseName
+   string szDataBasePath 
+   string szAsnContent 
+   string szLogonString
+   boolean bLogging
+   numeric ilen
+   string v_asnfile
+   
+endvariables
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+v_logon_string_supplied = "F"
+
+activate $instancename.pubPutmess("=========<pubGenDBMSAsnFileEx>=============")
+
+
+
+
+
+activate $instancename.privGetAsnSettingsChapter(ssPutmessLogFileName,szAdditionalSettings,bShowLogging,szSettings)
+
+dbmsEncFile = $concat(szdbmsMnemonic, "dbms")
+if (pLogonString ="")
+  activate $instancename.pubGetLogonString(dbmsEncFile, bShowLogging, szLogonString)
+else 
+  
+  
+  v_logon_string_supplied = "T"
+  szLogonString = pLogonString 
+endif
+
+if ($$rt_result = "")
+                
+                activate $instancename.privGetLogicalsSettingsChapter(bLogging,szLogicalsChapter)
+                
+                activate $instancename.privResourcesSettingsChapter(bLogging,szResourcesChapter)
+                
+                activate $instancename.privGetDriverSettingsChapter(szdbmsMnemonic,bLogging,szDriverSettings)
+   
+   
+       szDataBasePath = "%%szdbmsMnemonic%%%:%%databaseName%%%"
+       activate $instancename.privNormDatabasePath(szDataBasePath ,szDataBasePath )
+   endif
+   
+                szPathChapter = "[PATHS]%%^"
+    
+    
+    
+    
+    
+    
+        szPathChapter = $concat(szPathChapter, szDefValue, "=", szDataBasePath, "|")
+    endif
+
+                szPathChapter = $concat(szPathChapter, szLogonString, "%%^")
+                szPathChapter = $concat(szPathChapter, "$DEF=", szDefValue, "%%^")
+                szPathChapter = $concat(szPathChapter, "$SSP=", szDefValue, "%%^")
+                
+                
+                szAsnContent = $concat(szAsnContent, szSettings, "%%^", szDriverSettings, "%%^")
+                szAsnContent = $concat(szAsnContent, szLogicalsChapter, "%%^", szPathChapter, "%%^")
+                szAsnContent = $concat(szAsnContent, szResourcesChapter, "%%^")
+
+                activate $instancename.pubPutmess("----Generated assignment file---[starts here]------")
+                activate $instancename.pubPutmess( szAsnContent )
+                activate $instancename.pubPutmess("----Generated assignment file---[ ends here ]--------")
+                
+                v_asnfile = $concat($workingdir$, szdbmsMnemonic, "dbms.asn")
+                lfiledump/text szAsnContent, v_asnfile
+                if ($status < 0)
+                                $$rt_result = $concat($$rt_result, "Asn file: ", v_asnfile, " cannot be written", "%%^")
+                endif
+endif
+
+activate $instancename.pubPutmess("=========<pubGenDBMSAsnFileEx>===[ ends ]====")
+$logging$ = bLogging
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+
+return
+end
+
+
+operation privLogonStringInAddSetting
+params
+                string szAdditionalSettings : IN
+                string szLogonString : IN
+                string fszAdditionalSettings : OUT
+endparams
+
+variables
+                string Lpart, Rpart
+                numeric posVal
+endvariables
+
+                posVal = $split(szAdditionalSettings, 1, "|",Lpart, Rpart)
+                Rpart =  szLogonString 
+                fszAdditionalSettings = $concat(lpart,"|", Rpart)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation pubGenDefaultNetAsnFile
+params
+   
+   
+   boolean bShowLogging :IN 
+   
+   
+   string asnFileName : IN
+endparams
+
+variables
+   string szDefValue
+   string szResourcesChapter
+   string szDriverSettings
+   string szLogicalsChapter
+   string szPathChapter
+   string szSettings
+   string szdbmsMnemonic
+   string databaseName
+   string szDataBasePath 
+   string szAsnContent 
+   string szLogonString
+   boolean bLogging
+   numeric ilen
+   
+   
+   string v_additional_setting
+   string v_count
+endvariables
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<pubGenDBMSAsnFile>=============")
+
+
+activate $instancename.privFormatAdditionalSettings(szAdditionalSettings, encFileName, bShowLogging, fszAdditionalSettings)
+activate $instancename.privGetAsnSettingsChapter(ssPutmessLogFileName,fszAdditionalSettings,bShowLogging,szSettings)
+
+activate $instancename.privGetLogicalsSettingsChapter(bLogging,szLogicalsChapter)
+
+activate $instancename.privResourcesSettingsChapter(bLogging,szResourcesChapter)
+
+activate $instancename.privGetPathParts(szDefValue,szdbmsMnemonic,databaseName,bShowLogging)
+
+activate $instancename.privGetDriverSettingsChapter(szdbmsMnemonic,bLogging,szDriverSettings)
+
+szDataBasePath = "%%szdbmsMnemonic%%%:%%databaseName%%%"
+activate $instancename.privNormDatabasePath(szDataBasePath ,szDataBasePath )
+szPathChapter = $concat(szPathChapter ,"[PATHS]","%%^")
+szPathChapter = $concat(szPathChapter,szDefValue,"=%%szDataBasePath%%%","%%^")
+szPathChapter = $concat(szPathChapter,"$DEF=",szDefValue,"%%^")
+szPathChapter = $concat(szPathChapter,"$SSP=",szDefValue,"%%^")
+szPathChapter = $concat(szPathChapter,"%%^",sAdditionPathSettings,"%%^")
+
+szAsnContent = ""
+
+szAsnContent = $concat(szAsnContent,szSettings,"%%^")
+szAsnContent = $concat(szAsnContent,szDriverSettings,"%%^")
+szAsnContent = $concat(szAsnContent,szLogicalsChapter,"%%^")
+szAsnContent = $concat(szAsnContent,szPathChapter,szResourcesChapter)
+
+activate $instancename.pubPutmess("----Generated assignment file---[starts here]------")
+activate $instancename.pubPutmess( szAsnContent )
+activate $instancename.pubPutmess("----Generated assignment file---[ ends here ]--------")
+vWorkingDirectory = $ldir()
+
+lfiledump/text szAsnContent, asnFileName
+activate $instancename.pubPutmess("=========<pubGenDBMSAsnFile>===[ ends ]====")
+$logging$ = bLogging
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+end
+
+
+
+
+
+
+operation privFormatAdditionalSettings
+params
+  string p_additional_settings  : IN
+  string p_enc_file_name        : IN
+  boolean p_show_logging        : IN
+  string p_formated_settings    : OUT
+endparams
+variables
+  numeric v_count
+  string  v_current_setting
+  string  v_logon_string
+endvariables
+
+v_count = 0
+repeat
+  v_count += 1
+  getitem v_current_setting, p_additional_settings, v_count
+    if ($scan(v_current_setting, "default_net"))
+      activate $instancename.pubGetLogonString(p_enc_file_name, p_show_logging, v_logon_string)
+      v_current_setting = v_logon_string
+    endif
+    if (p_formated_settings != "")
+      p_formated_settings = $concat(p_formated_settings, "%%^")
+    endif
+    p_formated_settings = $concat(p_formated_settings, v_current_setting)
+until (v_current_setting = "")
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation pubGenAnonymouseAsnFile
+params
+   
+   
+   boolean bShowLogging :IN 
+endparams
+
+variables
+   string szDefValue
+   string szResourcesChapter
+   string szDriverSettings
+   string szLogicalsChapter
+   string szPathChapter
+   string szSettings
+   string szdbmsMnemonic
+   string databaseName
+   string szDataBasePath 
+   string szAsnContent
+   boolean bLogging
+   numeric ilen
+   
+endvariables
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<pubGenAnonymouseAsnFile>=============")
+
+activate $instancename.privGetAsnSettingsChapter(ssPutmessLogFileName,szAdditionalSettings,bShowLogging,szSettings)
+
+activate $instancename.privGetLogicalsSettingsChapter(bLogging,szLogicalsChapter)
+
+activate $instancename.privResourcesSettingsChapter(bLogging,szResourcesChapter)
+
+
+
+activate $instancename.privGetDriverSettingsChapter(szdbmsMnemonic,bLogging,szDriverSettings)
+
+szDataBasePath = "%%szdbmsMnemonic%%%:%%databaseName%%%"
+activate $instancename.privNormDatabasePath(szDataBasePath ,szDataBasePath )
+szPathChapter = "[PATHS]%%^%%szDefValue%%%=%%szDataBasePath%%%|?|?%%^$DEF=%%szDefValue%%%%%^$SSP=%%szDefValue%%%%%^"
+
+activate $instancename.pubPutmess("----Generated assignment file---[starts here]------")
+activate $instancename.pubPutmess( szAsnContent )
+activate $instancename.pubPutmess("----Generated assignment file---[ ends here ]--------")
+vWorkingDirectory = $ldir()
+lfiledump/text szAsnContent,"%%$workingdir$%%%%%szdbmsMnemonic%%%dbms.asn"
+
+activate $instancename.pubPutmess("=========<pubGenAnonymouseAsnFile>===[ ends ]====")
+$logging$ = bLogging
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+end
+
+
+
+
+
+operation pubGenErrorAsnFile
+params
+   
+   
+   boolean bShowLogging :IN
+   string asnFileName : OUT
+endparams
+variables
+   string szDefValue
+   string szResourcesChapter
+   string szDriverSettings
+   string szLogicalsChapter
+   string szPathChapter
+   string szSettings
+   string szdbmsMnemonic
+   string dbmsEncFile
+   string databaseName
+   string szDataBasePath 
+   string szAsnContent 
+   string szLogonString
+   boolean bLogging
+   numeric ilen
+   
+endvariables
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+
+
+
+
+
+activate $instancename.pubPutmess("=========<pubGenErrorAsnFile>=============")
+
+activate $instancename.privGetAsnSettingsChapter(ssPutmessLogFileName,szAdditionalSettings,bShowLogging,szSettings)
+
+dbmsEncFile = $concat(szdbmsMnemonic, "dbms")
+activate $instancename.pubGetLogonString(dbmsEncFile, bShowLogging, szLogonString)
+
+activate $instancename.privGetLogicalsSettingsChapter(bLogging,szLogicalsChapter)
+
+activate $instancename.privResourcesSettingsChapter(bLogging,szResourcesChapter)
+
+activate $instancename.privGetDriverSettingsChapter(szdbmsMnemonic,bLogging,szDriverSettings)
+
+szDataBasePath = "%%szdbmsMnemonic%%%:%%databaseName%%%"
+activate $instancename.privNormDatabasePath(szDataBasePath ,szDataBasePath )
+
+szAsnContent = "%%szSettings%%%%%^%%szDriverSettings%%%%%^%%szLogicalsChapter%%%%%^%%szPathChapter%%%%%szResourcesChapter%%%"
+activate $instancename.pubPutmess("----Generated assignment file---[ starts here with three extra pipes in logon string for error]------")
+activate $instancename.pubPutmess( szAsnContent )
+activate $instancename.pubPutmess("----Generated assignment file---[ ends here ]--------")
+
+asnFileName = "%%$workingdir$%%%%%szdbmsMnemonic%%%dbms.asn"
+lfiledump/text szAsnContent,"%%$workingdir$%%%%%szdbmsMnemonic%%%dbms.asn"
+activate $instancename.pubPutmess("=========<pubGenErrorAsnFile>===[ ends ]====")
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+$logging$ = bLogging
+end
+
+
+
+
+
+operation pubAddFileToAsn
+params
+  
+  
+endparams
+variables
+  string v_file_setting_content
+endvariables
+
+  v_file_setting_content = "[FILES]%%^%%(p_file_setting)"
+  lfiledump/text /append v_file_setting_content, p_asn_file
+
+end
+
+
+
+
+
+
+
+
+operation pubGetSlashLogParam
+params
+                boolean p_showLogging  : IN
+                
+endparams
+variables
+   string v_dbmsEncFile
+   string v_logonString
+   string v_defValue
+   string v_drvName
+   string v_database
+
+   boolean v_logging
+endvariables
+
+v_logging = $logging$
+$logging$ = p_showLogging
+
+
+
+activate $instancename.privGetPathParts(v_defValue, v_drvName, v_database, p_showLogging)
+
+
+
+v_dbmsEncFile = $concat(v_drvName, "log")
+activate $instancename.pubGetLogonString(v_dbmsEncFile, p_showLogging, v_logonString)
+
+
+
+
+
+
+
+p_slashLog = $concat("/log=",v_logonString)
+
+activate $instancename.pubPutmess("Commandline option=%%p_slashLog%%%")
+$logging$ = v_logging
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation pubGenBatchFiles
+params
+  string p_driverName : IN
+  boolean bShowLogging :IN 
+  string dmp : IN
+  string log : IN
+endparams
+variables
+   string v_findtxtFile
+   string v_findtxtFileForLog
+   string szBatchFileContent
+   string szStringsTool 
+   string vWorkingDirectory
+   boolean bLogging
+   numeric iLen
+   string  sToolPath
+   string v_batchFile
+   string v_batchFileForLog
+   string v_Path
+endvariables
+
+bLogging = $logging$
+$logging$ = bShowLogging
+$indentation$ = "%%$indentation$%%%   "
+activate $instancename.pubPutmess("=========<generateBatchFiles>==========")
+vWorkingDirectory = $ldir()
+
+activate $instancename.pubGetTestDataDir(sToolPath, "wintools\")
+if ($$rt_env_ostype = 'w64')
+    
+    szStringsTool = "%%sToolPath%%%strings64.exe"
+else
+    szStringsTool  = "%%sToolPath%%%strings.exe"
+endif
+
+if ( $lfileexists(szStringsTool ) == 0)
+   putmess "ERROR:[pubGenBatchFiles] The test tried to generate a batch file but could not find the necessary tooling"
+   putmess "Tools: %%szStringsTool%%%"
+   putmess "Please make sure you have the tools strings.exe and strings64.exe"
+   putmess "in the testdata folder for this test"
+   $logging$ = bLogging
+   return
+else
+   activate $instancename.pubPutmess("Tools: %%szStringsTool%%% found. Used to get strings out of the binary .dmp file")
+endif
+
+
+
+
+
+szStringsTool = "%%szStringsTool%%% -accepteula"
+
+activate $instancename.pubGetTestDataDir(v_Path, "")
+
+
+
+
+
+
+if ($lfileexists($concat(v_Path, "%%($workingdir$)asn\")) == 0)
+                v_Path = ""
+endif
+
+if (v_Path != "" && $lfileexists($concat("%%($workingdir$)asn\", p_driverName, "findcmd.txt")) == 1)
+                v_findtxtFile =  $concat("%%($workingdir$)asn\", p_driverName, "findcmd.txt") 
+else
+                v_findtxtFile =  $concat(v_Path, "%%($workingdir$)asn\", p_driverName, "findcmd.txt") 
+endif
+
+if (v_Path != "" && $lfileexists($concat("%%($workingdir$)asn\", p_driverName, "findcmdForLogFile.txt")) == 1)
+                v_findtxtFileForLog = $concat("%%($workingdir$)asn\", p_driverName, "findcmdForLogFile.txt")
+else
+                v_findtxtFileForLog = $concat(v_Path, "%%($workingdir$)asn\", p_driverName, "findcmdForLogFile.txt")
+endif
+
+if ( $lfileexists(v_findtxtFile ) == 0)
+   activate $instancename.privPrintTxtFileNotFound(v_findtxtFile, "<RESULTDMPFILE>")
+   $logging$ = bLogging
+   return 
+endif
+
+if ($lfileexists(v_findtxtFileForLog) == 0 && log != "")
+   activate $instancename.privPrintTxtFileNotFound(v_findtxtFileForLog, "<RESULTLOGFILE>")
+   $logging$ = bLogging
+   return 
+endif
+
+activate $instancename.pubPutmess("Using %%v_findtxtFile%%% this batch file for finding the password")
+activate $instancename.pubPutmess("Creating a new batch files to be used by this test")
+
+
+activate $instancename.pubPutmess( "Adding the string tool as first item in the batch file")
+activate $instancename.pubPutmess( "szStringsTool = %%szStringsTool%%%")
+
+szBatchFileContent = "%%szStringsTool%%%"
+
+activate $instancename.pubPutmess("Writing batch file content:")
+activate $instancename.pubPutmess(szBatchFileContent)
+
+v_batchFile = $concat($workingdir$, p_driverName, "password.bat")
+lfiledump/text szBatchFileContent , v_batchFile
+
+
+activate $instancename.pubPutmess("With the command copy command we append %%(v_findtxtFile) to this file %%v_batchFile")
+activate $instancename.pubPutmess("#copy %%(v_batchFile)+%%(v_findtxtFile) %%(v_batchFile)")
+spawn "#cmd /c copy %%(v_batchFile)+%%(v_findtxtFile) %%(v_batchFile)"  
+
+
+                v_batchFileForLog = $concat($workingdir$, p_driverName, "password_ForLogFile.bat")
+                lfiledump/text "", v_batchFileForLog
+                activate $instancename.pubPutmess("With the command copy command we also append %%(v_findtxtFileForLog) to this file %%v_batchFileForLog")
+                activate $instancename.pubPutmess("#copy %%(v_batchFileForLog)+%%(v_findtxtFileForLog) %%(v_batchFileForLog)")
+    spawn "#cmd /c copy %%(v_batchFileForLog)+%%(v_findtxtFileForLog) %%(v_batchFileForLog)"
+endif
+
+activate $instancename.pubPutmess("Batch file(s) contains the destination folder %%$workingdir$%%%")
+activate $instancename.pubPutmess("Call the batch file only with filenames")
+activate $instancename.pubPutmess("=========<generateBatchFiles>==[ ends ]=====")
+$logging$ = bLogging
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+
+end
+
+
+operation privPrintTxtFileNotFound
+params
+  string txtFile : IN 
+  string findResFileName : IN
+endparams
+
+putmess "ERROR:[pubGenBatchFiles] The test could not find the file named %%txtFile%%%"
+putmess "It looks like you run this test on a database which is currently"
+putmess "not supported by this test"
+putmess ""
+putmess "This file contains the dos find instruction with the password"
+putmess "for instance:"
+putmess "find /c /i mypassword .\%%$workingdir$%%%%2 >.\%%$workingdir$%%%%%findResFileName%%%"
+putmess ""
+putmess "The password is kept outside the uniface processes to avoid"
+putmess "situations that the spawned process gets this in its memory."
+putmess "Windows does not clean the memory before starting a process."
+putmess ""
+putmess "If you want to make this test repeatable for your database."
+putmess "Create the file with your data and check it into the" 
+putmess "source control system"
+putmess ""
+
+end
+
+
+operation privDelFile
+params
+                string p_filename : IN
+                string p_error : OUT
+endparams
+variables
+                numeric status
+endvariables
+
+status = $lfileexists(p_filename)
+if (status = 1)
+                lfiledelete "%%(p_filename)"
+                status = $status
+                if (status < 0)
+                                p_error = $concat("Failed to delete ",p_filename, " [", status, "]")
+                endif
+elseif (status < 0)
+                p_error = $concat("Could not determine if ", p_filename, " exists [", status, "]")
+endif
+
+return(status)
+end
+
+
+operation pubDelDumpFiles
+params
+                string p_testComponent : IN
+                string p_error : OUT
+endparams
+variables
+                string v_dumpFile
+                string v_stringsDumpFile
+                string v_ResultsFile
+                string v_error
+                numeric status
+endvariables
+
+
+
+p_error = ""
+
+
+v_dumpFile = $concat($workingdir$, p_testComponent, ".dmp")
+if ($lfileexists(v_dumpFile))
+  activate $instancename.privDelFile(v_dumpFile, v_error)
+  if ($status < 0)
+    status = $status
+    activate $instancename.pubPutmess("pubDelDumpFiles: %%(v_error)")
+    p_error = $concat(p_error, "%%^", v_error)
+  endif
+endif
+
+
+v_dumpFile = $concat($workingdir$, p_testComponent, "_async", ".dmp")
+if ($lfileexists(v_dumpFile))
+  activate $instancename.privDelFile(v_dumpFile, v_error)
+  if ($status < 0)
+    status = $status
+    activate $instancename.pubPutmess("pubDelDumpFiles: %%(v_error)")
+    p_error = $concat(p_error, "%%^", v_error)
+  endif
+endif
+
+
+v_stringsDumpFile = $concat($workingdir$, p_testComponent, ".txt")
+if ($lfileexists(v_stringsDumpFile))
+  activate $instancename.privDelFile(v_stringsDumpFile, v_error)
+  if ($status < 0)
+    status = $status
+    activate $instancename.pubPutmess("pubDelDumpFiles: %%(v_error)")
+    p_error = $concat(p_error, "%%^", v_error)
+  endif
+endif
+
+
+v_stringsDumpFile = $concat($workingdir$, p_testComponent, "_async", ".txt")
+if ($lfileexists(v_stringsDumpFile))
+  activate $instancename.privDelFile(v_stringsDumpFile, v_error)
+  if ($status < 0)
+    status = $status
+    activate $instancename.pubPutmess("pubDelDumpFiles: %%(v_error)")
+    p_error = $concat(p_error, "%%^", v_error)
+  endif
+endif
+
+
+v_ResultsFile = $concat($workingdir$, "<RESULTDMPFILE>")
+activate $instancename.privDelFile(v_ResultsFile, v_error)
+if ($status < 0)
+                status = $status
+                activate $instancename.pubPutmess("pubDelDumpFiles: %%(v_error)")
+                p_error = $concat(p_error, "%%^", v_error)
+endif
+
+v_ResultsFile = $concat($workingdir$, "<RESULTLOGFILE>")
+activate $instancename.privDelFile(v_ResultsFile, v_error)
+if ($status < 0)
+                status = $status
+                activate $instancename.pubPutmess("pubDelDumpFiles: %%(v_error)")
+                p_error = $concat(p_error, "%%^", v_error)
+endif
+
+
+end
+
+
+
+
+
+
+
+
+
+
+operation pubGetDBMSmnemonic
+params
+    string szdbmsMnemonic : OUT
+endparams
+variables
+   string szDefpath 
+   string szDefValue
+   string LeftPart
+   string RightPart
+   string szOldLogonString
+   numeric iLen
+   numeric lReturn 
+endvariables
+
+szDefpath = $assignments("PATHS", "$DEF")
+$indentation$ = "%%$indentation$%%%   "
+
+
+
+
+
+
+
+szDefpath = $assignments("PATHS", szDefValue)
+
+
+
+
+
+
+activate $instancename.pubPutmess( "split[3] %%RightPart%%% on %%":%%"")
+
+activate $instancename.pubPutmess("========<pubGetDBMSmnemonic>===[ends]===")
+
+iLen = $length($indentation$)
+iLen = iLen - <DEF_INDENTATION>
+$indentation$ = $indentation$[1:iLen]
+end
+
+
+operation pubSetWorkingDir
+params
+  string p_workingDir :IN 
+endparams
+variables
+                numeric v_length
+endvariables
+
+
+
+v_length = $length(p_workingDir)
+if (p_workingDir[v_length] != "\" & p_workingDir[v_length] != "/")
+                p_workingDir = $concat(p_workingDir, "\")
+endif
+
+$workingdir$ = p_workingDir
+
+end
+
+
+
+
+operation pubSaveTestLogfile
+params
+                numeric p_testcase  : IN
+                string p_rtComponent : IN
+                string p_testComponent : IN
+                string p_oldLogFile : OUT
+                string p_newLogFile : OUT
+                string p_stringsDumpFile : OUT
+endparams
+
+
+activate $instancename.pubSaveTestDumpFile(p_testcase, p_rtComponent, p_testComponent, p_stringsDumpFile)
+
+
+p_newLogFile = $concat(p_rtComponent, "_", p_testComponent, "_", p_testcase)
+p_newLogFile = $concat(p_newLogFile, ".log")
+
+p_oldLogFile = $concat($workingdir$, p_testComponent, ".log")
+
+
+
+if ($lfileexists(p_newLogFile) = 1)
+                lfiledelete(p_newLogFile)
+endif
+lfilecopy p_oldLogFile, p_newLogFile
+
+return($status)
+
+end
+
+
+
+
+operation pubSaveTestDumpFile
+params
+                numeric p_testcase  : IN
+                string p_rtComponent : IN
+                string p_testComponent : IN
+                string p_newDumpFile : OUT
+endparams
+variables
+                string v_oldDumpFile
+endvariables
+
+
+v_oldDumpFile = $concat($workingdir$, p_testComponent, ".dmp")
+
+
+p_newDumpFile = $concat(p_rtComponent, "_", p_testComponent, "_", p_testcase)
+p_newDumpFile = $concat(p_newDumpFile, "_dmp.log")
+
+
+
+if ($lfileexists(p_newDumpFile) = 1)
+                lfiledelete(p_newDumpFile)
+endif
+lfilecopy v_oldDumpFile, p_newDumpFile
+return($status)
+
+end
+
+
+
+
+operation pubGenEncFiles
+params
+                string p_version : IN
+                string p_error : OUT
+endparams
+variables
+                string v_def
+                string v_driver
+                string v_filename
+                string v_command
+                string v_uniface_bin
+                string v_database_name
+endvariables
+
+
+$instancehandle->privGetPathParts(v_def, v_driver, v_database_name, 0)
+
+
+v_filename = $concat($workingdir$, v_driver, "encpaths.cmd")
+
+
+call rt_getexedir(v_uniface_bin)
+
+
+v_command = $concat("#", v_filename, " ", v_uniface_bin)
+v_command = $concat(v_command, " %%"%%(v_database_name)%%"")
+v_command = $concat(v_command, " %%"%%($workingdir$)%%"")
+if (p_version != "")
+                v_command = $concat(v_command, " ", p_version)
+endif
+
+
+spawn v_command
+
+
+v_filename = $concat($workingdir$, v_driver, "dbms.enc")
+if ($fileexists(v_filename) != 1)
+                p_error = $concat("File ", v_filename, " does not exist, cannot continue")
+                p_error = $concat("%%^", p_error, "spawn failed? ", v_command)
+                return(-1)
+endif
+
+v_filename = $concat($workingdir$, v_driver, "log.enc")
+if ($fileexists(v_filename) != 1)
+                p_error = $concat("File ", v_filename, " does not exist, cannot continue")
+                p_error = $concat("%%^", p_error, "spawn failed? ", v_command)
+                return(-1)
+endif
+
+v_filename = $concat($workingdir$, v_driver, "open.enc")
+if ($fileexists(v_filename) != 1)
+                p_error = $concat("File ", v_filename, " does not exist, cannot continue")
+                p_error = $concat("%%^", p_error, "spawn failed? ", v_command)
+                return(-1)
+endif
+
+return(0)
+end
+
+
+
+
+
+
+operation pubSetupEnv
+params
+                string p_workdir : IN
+                string p_encfiles : IN
+                string p_testdata_dir : OUT
+                string p_error : OUT
+endparams
+variables
+                string v_encfile
+                string v_error
+                string v_filename
+                string v_srcfile
+                string v_dstfile
+                numeric v_status
+                numeric v_count
+endvariables
+
+$instancehandle->pubSetupWorkingDir(p_workdir, p_testdata_dir, p_error)
+
+if (p_error = "")
+                v_count = 0
+                repeat
+                                v_count += 1
+                                getitem v_encfile, p_encfiles, v_count
+                                if (v_encfile = "" && v_count > 1)
+                                                break
+                                endif
+                                if (v_encfile = "")
+                                                
+                                                v_filename = $concat($$rt_env_dbms, "encpaths.cmd")
+                                                v_srcfile = $concat(p_testdata_dir, v_filename)
+                                                v_dstfile = $concat(p_workdir, v_filename)
+                                else
+                                                
+                                                v_srcfile = $concat(p_testdata_dir, "\asn\", v_encfile)
+                                                v_dstfile = $concat(p_workdir, v_encfile)
+                                endif
+                
+                                if ($fileexists(v_srcfile) != 1)
+                                                p_error = $concat("File ", v_srcfile, " does not exist, cannot continue")
+                                                v_status = -2
+                                endif
+                
+                                if (p_error = "") 
+                                                filecopy v_srcfile, v_dstfile
+                                                if ($fileexists(v_dstfile) != 1)
+                                                                p_error = $concat("File ", v_dstfile, " does not exist, cannot continue")
+                                                                v_status = -2
+                                                endif
+                                endif
+                until (v_encfile = "")
+endif
+
+return(v_status)
+end
+
+
+
+
+
+
+operation pubSetupWorkingDir
+params
+                string p_workdir : IN
+                string p_testdata_dir : OUT
+                string p_error : OUT
+endparams
+variables
+                string v_error
+                numeric v_status
+  numeric v_retry
+endvariables
+
+
+if ($fileexists(p_workdir) > 0)
+                call rt_chmod_v2(p_workdir, v_error, "d")
+                v_retry = 0
+                repeat
+                                call rt_delworkdir_v2(p_workdir, v_error)
+                                v_status = $status
+                                if (v_status >= 0)
+                                                break
+                                endif
+                                v_retry += 1
+                until (v_retry > 3)
+
+                if (v_status < 0 | v_error != "")
+                                p_error = $concat("Could not clean working directory, ", p_workdir)
+                                p_error = $concat(p_error, " [", v_status, "] ", v_error)
+                endif
+endif
+
+
+if (p_error = "")
+                v_retry = 0
+                repeat
+                                ldircreate p_workdir
+                                v_status = $status
+                                if (v_status >= 0)
+                                                break
+                                endif
+
+                                
+                                call rt_delworkdir_v2(p_workdir, v_error)
+                                v_retry += 1
+                until (v_retry > 3)
+
+                if (v_status < 0)
+                                p_error = $concat("Could not create working directory, ", p_workdir, " [", v_status, "]%%^")
+                                p_error = $concat(p_error, "Log file might be open in an editor%%^")
+                                p_error = $concat(p_error, "Explorer.exe can keep it open, either wait or manually delete in explorer%%^")
+                                p_error = $concat(p_error, "F5 in explorer to refresh, it may just disappear")
+
+                endif
+endif
+
+
+if (p_error = "")
+                $instancehandle->pubGetTestDataDir(p_testdata_dir, p_workdir)
+                if (p_testdata_dir = "")
+                                p_error = $concat("rt_test_data_", $$rt_env_ostype, " logical is not defined")
+                                v_status = -1
+                else
+                                if ($fileexists(p_testdata_dir) != 2)
+                                                p_error = $concat("Directory ", p_testdata_dir, " does not exist, cannot continue")
+                                                v_status = -2
+                                endif     
+                endif
+endif
+
+end
+
+
+
+operation pubAppendToResult
+params
+                string p_error : IN
+endparams
+variables
+                string v_sep
+endvariables
+
+if ($$rt_result != "")
+                v_sep = "%%^"
+endif
+
+$$rt_result = $concat($$rt_result, v_sep, p_error)
+
+return(0)
+end
+
+
+operation pubHandleError
+params
+   
+   
+   
+   
+   
+   
+   string batchFileForDmp : IN
+   string batchFileForLog : IN
+endparams
+variables
+                string v_newFileName
+                string v_oldFileName
+                string v_DumpFile
+                string v_findBatFileDmp
+                string v_findBatFileLog
+                string v_currentDir
+endvariables
+
+
+activate $instancename.pubSaveTestLogfile(p_testcase, p_instancename , p_testComponent, v_oldFileName, v_newFileName, v_DumpFile)
+if ($status < 0)
+                putmess "[operation pubHandleError] in %%$instancename%%% tried to copy for component %%p_instancename%%%"
+                putmess "%%v_oldFileName%%% to %%v_newFileName%%%"
+                putmess "This failed with a $status of %%$status%%%"
+endif
+
+v_currentDir = $ldir()
+
+
+v_findBatFileDmp = $concat(p_def_work_folder, batchFileForDmp)
+v_findBatFileLog = $concat(p_def_work_folder, batchFileForLog)
+
+p_errorString = $concat(p_errorString, "%%^%%^")
+p_errorString = $concat(p_errorString, "Detailed explanation:%%^")
+p_errorString = $concat(p_errorString, "In the aadib, log files in the RT directory are copied to the results folder%%^")
+p_errorString = $concat(p_errorString, "In the aadib, the work directory ",p_def_work_folder," is not saved%%^")
+p_errorString = $concat(p_errorString, "Files saved by copying to current RT directory ", v_currentDir, ":%%^")
+p_errorString = $concat(p_errorString, "The logfile of the spawned process ", v_newFileName, "%%^")
+p_errorString = $concat(p_errorString, "The memory dump of the spawned testcase", v_DumpFile, "%%^")
+p_errorString = $concat(p_errorString, "If running locally and ", v_currentDir, p_def_work_folder," is available :%%^")
+
+
+                p_errorString = $concat(p_errorString, v_findBatFileDmp, " contains the plain text ", p_whatToFind, "%%^")
+                p_errorString = $concat(p_errorString, "and is the bat file that is used to search the stringsdump", "%%^")
+
+                p_errorString = $concat(p_errorString, v_findBatFileDmp, " and ", v_findBatFileLog)
+    p_errorString = $concat(p_errorString, " contains the plain text ", p_whatToFind, "%%^")
+                p_errorString = $concat(p_errorString, v_findBatFileDmp, " is the bat file that is used to search the stringsdump", "%%^")
+                p_errorString = $concat(p_errorString, "while ", v_findBatFileLog, " is the bat file that is used to search the logfile", "%%^")
+endif
+
+p_errorString = $concat(p_errorString, "For further research you can check the files in ", v_currentDir, p_def_work_folder, "%%^")
+
+end
+
+
+
+
+
+
+operation pubSpawnTest
+params
+  
+  
+  
+  
+  
+endparams
+variables
+                string v_qualifiers
+                string v_currentdir
+                string v_idecommand
+                string v_usysadm
+                string v_error
+                string v_password
+endvariables
+
+  call rt_getucommand("ide", v_idecommand)
+  if (v_idecommand == "")            
+    $$rt_result = $concat($$rt_result, "Cannot get ide command.")
+    return 0
+  endif
+
+  
+  v_usysadm = $setting("usys", "[paths]usysadm", "USYSDATA")
+  
+
+  v_qualifiers = $concat("/asn=", p_asn)
+  v_qualifiers = $concat(v_qualifiers, " /adm=", v_usysadm)
+  v_qualifiers = $concat(v_qualifiers, " ", p_additonal_qualifiers)
+  v_qualifiers = $concat(v_qualifiers, " /tst ", p_testComponent, " ", p_parameters)
+  if (p_useQuestionMark)
+    v_qualifiers = $concat(v_qualifiers, " ?")
+  endif
+
+  v_currentdir = $ldir()
+
+  
+  Putmess("#%%(v_idecommand) /dir=%%(v_currentdir) %%(v_qualifiers)")
+
+  
+  
+  
+  
+  
+
+  
+  v_password = $setting("", "U_PASSWORD", "ENVDATA")
+  
+  $setting("", "U_PASSWORD", "ENVDATA") = ""
+
+  call rt_ucommand(v_idecommand, v_currentdir, v_qualifiers, v_error)
+
+  
+  $setting("", "U_PASSWORD", "ENVDATA") = v_password
+
+end
+
+
+
+
+
+
+operation pubCheckResults
+params
+  
+  
+  
+  
+endparams
+variables
+  string v_error
+  string v_resultsFileDmp
+  string v_batchFileName
+  string v_currentDir
+  string v_file_name
+endvariables
+
+   v_file_name = "%%($workingdir$)%%p_testComponent%%%.%%(p_file_type)"
+
+   if ($lfileexists(v_file_name) = 0)
+      $$rt_result = $concat($$rt_result, "Error: %%(p_testComponent).dmp does not exist, no spawned command executed")
+      p_passwordFound = -1
+      return 0
+   else
+      v_currentDir = $ldir()
+      activate $instancename.pubGenBatchFiles("TCP", p_showLogging, "dmp", "log")
+      
+      
+
+      
+      activate $instancename.privDelFile(v_resultsFileDmp, v_error)
+   endif
+end
+
+
+
+
+operation pubPrintScanResults
+params
+    
+    numeric iCountLogSearch : IN
+    numeric caseNr : IN 
+    string szWhatToFind : IN
+    string szComponent : IN
+    string frmComponent : IN
+    string batchFileForDmp : IN
+    string batchFileForLog : IN
+endparams
+
+  if (iCount > 0)
+    activate $instancename.pubAppendToResult("Found password %%(iCount) times")
+  elseif (iCount < 0)
+    activate $instancename.pubAppendToResult("Error: the test did not execute correctly")
+  endif
+
+  
+                if(iCountLogSearch > 0)
+                                activate $instancename.pubAppendToResult("Found password %%(iCountLogSearch) times in log file")
+                elseif (iCountLogSearch < 0)
+                activate $instancename.pubAppendToResult("Error: the test did not execute correctly")
+                endif
+  endif
+
+
+    activate $instancename.pubPutmess("CLEANIT")
+    call rt_passed_proc
+  else
+    activate $instancename.pubPutmess("DUMPIT")
+    activate $instancename.pubHandleError(caseNr,szComponent,frmComponent,"<DEF_WORK_FOLDER>",szWhatToFind,$$rt_result,batchFileForDmp,batchFileForLog)
+    call rt_failed_proc
+  endif
+
+end
+
+operation pubSetPID
+params
+                string p_PID : IN
+endparams
+                $PID$ = p_PID
+end
+
+variables
+  
+  boolean         SETUP_DONE               
+  public handle   SU_UTILS                 
+  
+  
+  
+
+  public handle   THIS                     
+endvariables
+#Comment start_of_mappings
+#Comment end_of_mappings
+
+
+
+
+
+
+                            
+
+
+
+
+#define DEF_INDENTATION=3
+#define DEF_INDENTSTRING = "   "
+
+
+
+#define SU_UTILS            SU_CMN_SVC
+
+
+
+
+
+
+
+#define IS_VALID_CONTEXT                        ($$rt_env_ostype = "W32" && ($$rt_env_dbms = "ORA" | $$rt_env_dbms = "MSS"))
+#define VALID_CONTEXT_MSG                  Only supported on Windows for ORA and MSS
+#startdefine
+
+#define $triggerAbbr=EXEC
+operation exec
+
+
+
+
+
+
+newinstance "<SU_UTILS>", $su_utils$
+if ($status < 0)
+                putmess "Error: Could not instantiate <SU_UTILS> service"
+                
+                putmess $procerrorcontext
+                exit
+endif
+
+$su_utils$->pubPutmess("CLEANIT")
+$su_utils$->pubSetWorkingDir("<DEF_WORK_FOLDER>")
+
+
+$this$ = $instancehandle
+
+#INCLUDE RT:RT_AUTO_2_EXEC
+
+#enddefine
+
+
+#startdefine
+
+#define $triggerAbbr=PRNT
+trigger print
+
+if ($setup_done$ = 0)
+                call rt_runTestCase(-1)
+                if ($status < 0)
+                                return
+                endif
+endif
+
+#INCLUDE RT:RT_AUTO_2_PRINT
+
+end
+
+#enddefine
+
+
+#startdefine
+
+#define $triggerAbbr=LPMX
+#INCLUDE RT:RT_AUTO_2_LPM
+
+
+
+
+entry rt_deldata_entry
+
+  $testDataImported$ = "F"      
+
+  
+  
+  
+
+  call rt_erase_proc()
+
+
+
+
+
+
+
+entry rt_insdata_entry
+
+    
+
+    if ($procerror)
+      putmess "Activate failed: %%$procerrorcontext%%%"
+    endif
+
+    $testDataImported$ = "T"
+
+
+entry testDollarPassword
+params
+  numeric p_testcase  : IN
+  string testScen: IN
+endparams
+variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+   string szParameters
+endvariables
+
+  
+  szAdditionalSettings = ""
+ szComponent = "SU_TST_SVC_B"
+  
+  selectcase testScen
+    case "positive"
+       
+    case "neg1"
+       
+    case "neg2"
+       
+    case "neg3"
+       
+    case "neg4"
+       
+  endselectcase
+
+  iCount = -1
+
+  $$rt_text     = "$password with open statement [%%szComponent%%%][Params:%%szParameters%%%] Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an asn file has no login credentials%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+                
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+  
+  $su_utils$->pubPrintScanResults(iCount,-1,p_testcase,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+
+end
+
+#enddefine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+operation init
+  
+  $TESTINFO$          = "Uses the SU_CMN_SVC Service (07-January-2019)"
+end
+
+
+
+
+
+operation rt_setup
+variables
+                string v_error
+    string v_testDataDir
+                numeric v_status
+endvariables
+
+
+if ($setup_done$ = 0)
+
+                $$rt_text     = "Setup working environment <DEF_WORK_FOLDER>"
+                $$rt_expected = "Newly created empty directory"
+                $$rt_result   = ""
+
+                if (<IS_VALID_CONTEXT>)
+                                v_status = $su_utils$->pubSetupEnv("<DEF_WORK_FOLDER>", "", v_testDataDir, v_error)
+                                if (v_status = 0)
+                                                v_status = $su_utils$->pubGenEncFiles("v1", v_error)
+                                endif
+                else
+                                v_status = 0
+                    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+                endif
+
+                if (v_status < 0)
+                                $setup_done$ = 0
+                                $su_utils$->pubPutmess("DUMPIT")
+                                $$rt_result = v_error
+                                call rt_failed_proc
+                else
+                                $setup_done$ = 1
+                                $su_utils$->pubPutmess("CLEANIT")
+                                call rt_passed_proc
+                endif
+endif
+
+return(v_status)
+end
+
+
+operation rt_testcase_1
+  variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+    string szParameters
+endvariables
+
+  szWhatToFind = "password"
+  szAdditionalSettings = ""
+  szComponent = "SU_TST_FRM_A"
+  
+  iCount = -1
+
+  $$rt_text     = "Spawn idf with testform to find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted asn file%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    $this$->spawnTestForDBMS($$rt_env_dbms,szComponent,szParameters,szWhatToFind,szAdditionalSettings,0,iCount,batchFileNameDmp)
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,1,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+end
+
+operation rt_testcase_2
+variables
+   
+   string batchFileNameDmp
+   string szWhatToFind
+   
+   string szComponent
+   string szParameters 
+endvariables
+
+  szWhatToFind = "password"
+  szAdditionalSettings = ""
+  szComponent = "SU_TST_SVC_B"
+
+  
+  iCount = -1
+
+  $$rt_text     = "Retrieve/e:[%%szComponent%%%][Params:%%szParameters%%%] Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted asn file%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    $this$->spawnTestForDBMS($$rt_env_dbms,szComponent,szParameters,szWhatToFind,szAdditionalSettings,0,iCount,batchFileNameDmp)
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,2,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+  return 0
+end
+
+operation rt_testcase_3
+variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+    string szParameters 
+endvariables
+  
+  
+  szAdditionalSettings = ""
+  szComponent = "SU_TST_SVC_B"
+  
+  iCount = -1
+
+  $$rt_text     = "creocc & store [%%szComponent%%%][Params:%%szParameters%%%] Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted asn file%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    $this$->spawnTestForDBMS($$rt_env_dbms,szComponent,szParameters,szWhatToFind,szAdditionalSettings,0,iCount,batchFileNameDmp)
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,3,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+end
+
+operation rt_testcase_4
+   variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+    string szParameters 
+endvariables
+
+  szWhatToFind = "password"
+  szAdditionalSettings = ""
+  szComponent = "SU_TST_SVC_B"
+  
+  iCount = -1
+
+  $$rt_text     = "Retrieve/e:[%%szComponent%%%][Params:%%szParameters%%%] /log=<username>|<password>. Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted username/password%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,4,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+end
+
+operation rt_testcase_5
+   variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+   string szParameters 
+endvariables
+  szAdditionalSettings = ""
+  
+  szAdditionalSettings = ""
+  szComponent = "SU_TST_SVC_B"
+  
+  iCount = -1
+
+  $$rt_text     = "creocc & store [%%szComponent%%%][Params:%%szParameters%%%] /log=<username>|<password>. Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted username/password%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,5,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+end
+
+operation rt_testcase_6
+   variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+    string szParameters 
+endvariables
+
+  szAdditionalSettings = ""
+  
+  szAdditionalSettings = "$def_charset = UTF8"
+  szComponent = "SU_TST_SVC_B"
+  
+  iCount = -1
+
+  $$rt_text     = "creocc & store [%%szComponent%%%][Params:%%szParameters%%%] /log=<username>|<password>. Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted username/password%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,6,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+end
+
+
+operation rt_testcase_7
+   variables
+    
+    string batchFileNameDmp
+    string szWhatToFind
+    
+    string szComponent
+    string szParameters 
+endvariables
+
+  
+  szAdditionalSettings = ""
+  szComponent = "SU_TST_SVC_B"
+  
+  iCount = -1
+
+  $$rt_text     = "open statement [%%szComponent%%%][Params:%%szParameters%%%] Find %%szWhatToFind%%% for (%%$$rt_env_dbms%%%) using an encrypted asn file%%^extra settings:%%szAdditionalSettings%%%"
+  
+  $$rt_result   = ""
+
+  if (<IS_VALID_CONTEXT>)
+    $this$->spawnTestForDBMSEx($$rt_env_dbms,szComponent,szParameters,szWhatToFind,szAdditionalSettings,0,iCount,batchFileNameDmp,"?|? ")
+  else
+    $$rt_expected = "Test skipped: <VALID_CONTEXT_MSG>"
+    iCount = 0
+  endif
+
+  $su_utils$->pubPrintScanResults(iCount,-1,7,szWhatToFind,szComponent,$componentname,batchFileNameDmp,"")
+
+  return 0
+end
+
+
+
+
+
+operation rt_testcase_8
+
+  call  testDollarPassword(8, "positive")
+
+end
+
+
+
+
+
+
+operation rt_testcase_9
+  call  testDollarPassword(9, "neg1") 
+end
+
+
+
+
+
+
+operation rt_testcase_10
+  call  testDollarPassword(10, "neg2") 
+end
+
+
+
+
+
+
+operation rt_testcase_11
+  call  testDollarPassword(11, "neg3") 
+end
+
+
+
+
+
+
+operation rt_testcase_12
+  call  testDollarPassword(12, "neg4") 
+end
+
+operation spawnTestForDBMS
+params
+   
+   
+   
+   
+   
+   boolean bErrorInLogonPath : IN
+   numeric iFoundPassWordOrUsername : OUT
+   string batchFileNameDmp : OUT
+endparams
+
+   
+
+end 
+
+operation spawnTestForDBMSEx
+params
+   
+   
+   
+   
+   
+   boolean bErrorInLogonPath : IN
+   numeric iFoundPassWordOrUsername : OUT
+   string batchFileNameDmp : OUT 
+   string logOnString : IN
+endparams
+                variables
+       string vCommand
+       string vExePath
+       string vUsysAdm
+       string vUsysIni
+       string use_asn 
+       string vWorkingDirectory
+       STRING szQuestionMark
+       string error
+       string resultsFileDmp
+       string batchFileName
+                endvariables
+
+   
+   iFoundPassWordOrUsername = -1
+
+   
+   if (szDatabasename = "" || szTestComponent == "")
+      $su_utils$->pubAppendToResult("ERROR: operation spawnTestForDBMS should be called with dbms mnemonic and test component name")
+      return 0
+                endif
+
+   if (szUserNamePass != "username" && szUserNamePass != "password")
+      $su_utils$->pubAppendToResult("ERROR:operation spawnTestForDBMS should be called with %%"username%%" or %%"password%%" in third parameter")
+      return 0
+   endif
+   
+   szQuestionMark=""
+   if (CHKQUESTION.DUMMY.DUMMY)
+      szQuestionMark = "?"
+   endif
+   
+   
+   if (CHKKEEP.DUMMY.DUMMY == 0)
+      $su_utils$->pubDelDumpFiles(szTestComponent, error)
+      if ($status < 0 | error != "")
+                                $su_utils$->pubAppendToResult(error)
+                                return(0)
+      endif
+   endif
+
+                
+   
+   vUsysAdm = $setting("usys", "[paths]usysadm", "USYSDATA") 
+   vUsysIni= "%%vUsysAdm%%%\usys.ini"
+   vWorkingDirectory = $ldir()
+
+   use_asn = "<DEF_WORK_FOLDER>%%szDatabasename%%%dbms.asn"               
+   if (bErrorInLogonPath)
+      $su_utils$->pubGenErrorAsnFile(szTestComponent, szAdditionalSettings, CHKLOGGING.DUMMY.DUMMY)
+   else
+      
+      $su_utils$->pubGenDBMSAsnFileEx(szTestComponent, szAdditionalSettings, CHKLOGGING.DUMMY.DUMMY,logOnString)
+   endif
+
+   
+   call rt_getExeDir(vExePath)
+   if (vExePath == "")
+      $su_utils$->pubAppendToResult("Unable to get Uniface executables path")
+      return 0
+   endif
+
+   
+   
+   vCommand = $concat("#", vCommand)
+   vCommand = $concat(vCommand, " /dir=", vWorkingDirectory, " /ini=", vUsysIni)
+   vCommand = $concat(vCommand, " /asn=", use_asn)
+   vCommand = $concat(vCommand, " /tst ", szTestComponent)
+   vCommand = $concat(vCommand, " ", szParameters, " ", szQuestionMark)
+   $this$->localPutmess(vCommand)
+  spawn vCommand
+   
+   if ($status < 0)
+      $su_utils$->pubAppendToResult("Error: spawn returned $status=%%$status%%% pleas check test results")
+      $su_utils$->pubAppendToResult(vCommand)
+   endif
+   
+
+   
+   
+   batchFileNameDmp = batchFileName
+end
+
+
+
+
+
+operation spawnSlashLog
+params
+   
+   
+   
+   
+   
+   numeric iFoundPassWordOrUsername : OUT
+   string batchFileNameDmp : OUT 
+endparams
+                variables
+       string vCommand
+       string vExePath
+       string vUsysAdm
+       string vUsysIni
+       string vWorkingDirectory
+       string use_asn 
+       string szLogonString
+       string szQuestionMark
+       string error
+       string resultsFileDmp
+       string batchFileName
+                endvariables
+
+   
+   iFoundPassWordOrUsername = -1
+
+   
+   if (szDatabasename = "" || szTestComponent == "")
+      $su_utils$->pubAppendToResult("ERROR:operation spawnSlashLog should be called with dbms mnemonic and test component name")
+      return 0
+                endif
+
+   if (szUserNamePass != "username" && szUserNamePass != "password")
+      $su_utils$->pubAppendToResult("ERROR:operation spawnSlashLog should be called with %%"username%%" or %%"password%%" in third parameter")
+      return 0
+   endif
+
+   szQuestionMark=""
+   if (CHKQUESTION.DUMMY.DUMMY)
+      szQuestionMark = "?"
+   endif
+
+   
+   
+   if (CHKKEEP.DUMMY.DUMMY == 0)
+      $su_utils$->pubDelDumpFiles(szTestComponent, error)
+      if ($status < 0 | error != "")
+                                $su_utils$->pubAppendToResult(error)
+                                return(0)
+      endif
+   endif
+
+   $su_utils$->pubGetSlashLogParam(CHKLOGGING.DUMMY.DUMMY,szLogonString )
+   if (szLogonString = "")
+      
+      $su_utils$->pubAppendToResult("Error: Failed to get the username|password string for the /log qualifier")
+      return(0)
+   endif
+
+   
+   
+   vUsysAdm = $setting("usys", "[paths]usysadm", "USYSDATA") 
+   vUsysIni= "%%vUsysAdm%%%\usys.ini"
+   vWorkingDirectory = $ldir()
+
+   use_asn = "<DEF_WORK_FOLDER>%%szDatabasename%%%dbms.asn"               
+   $su_utils$->pubGenAnonymouseAsnFile(szTestComponent, szAdditionalSettings, CHKLOGGING.DUMMY.DUMMY)
+   
+   
+   call rt_getExeDir(vExePath)
+                if (vExePath == "")
+                                $su_utils$->pubAppendToResult("Unable to get Uniface executables path")
+                                return 0
+                endif
+
+   
+   
+   vCommand = $concat("#", vCommand, " ", szLogonString)
+   vCommand = $concat(vCommand, " /dir=", vWorkingDirectory, " /ini=", vUsysIni)
+   vCommand = $concat(vCommand, " /asn=", use_asn)
+   vCommand = $concat(vCommand, " /tst ", szTestComponent)
+   vCommand = $concat(vCommand, " ", szParameters, " ", szQuestionMark)
+   $this$->localPutmess(vCommand)
+   spawn vCommand
+
+   if ($status < 0)
+      $su_utils$->pubAppendToResult("Error: spawn returned $status=%%$status%%% pleas check test results")
+      $su_utils$->pubAppendToResult(vCommand)
+   endif
+   batchFileNameDmp = batchFileName
+end
+operation localPutmess
+params
+                string szMessage : IN
+endparams
+                if (CHKLOGGING.DUMMY.DUMMY)
+                                putmess szMessage
+   endif
+end
+

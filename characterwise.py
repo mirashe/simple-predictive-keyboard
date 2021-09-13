@@ -11,13 +11,14 @@ import pickle
 import heapq
 import seaborn as sns
 from pylab import rcParams
+import re
 
 # %matplotlib inline
 
 should_save = not True
 should_load = True
-input_file_path = 'nietzsche.txt'
-model_files_title = 'characterwise-nietzsche'
+input_file_path = 'uniface-code-samples-01.txt'
+model_files_title = 'characterwise-uniface-simple'
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -27,7 +28,12 @@ sns.set(style='whitegrid', palette='muted', font_scale=1.5)
 rcParams['figure.figsize'] = 12, 5
 
 text = open(input_file_path).read().lower()
-print('corpus length:', len(text))
+text = re.sub(' +', ' ', text)
+text = re.sub('( *[\r\n])+', '\r\n', text)
+
+
+
+# print('trimmed text: ', text)
 
 chars = sorted(list(set(text)))
 char_indices = dict((c, i) for i, c in enumerate(chars))
