@@ -12,13 +12,14 @@ import heapq
 import seaborn as sns
 from pylab import rcParams
 import re
+from sklearn.model_selection import train_test_split
 
 # %matplotlib inline
 
-should_save = not True
-should_load = True
+should_save = True
+should_load = not True
 input_file_path = 'uniface-code-samples-01.txt'
-model_files_title = 'characterwise-uniface-simple'
+model_files_title = 'characterwise-uniface-stateful'
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -31,48 +32,58 @@ text = open(input_file_path).read().lower()
 text = re.sub(' +', ' ', text)
 text = re.sub('( *[\r\n])+', '\r\n', text)
 
-
-
-# print('trimmed text: ', text)
-
 chars = sorted(list(set(text)))
 char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
 print(f'unique chars: {len(chars)}')
 
-SEQUENCE_LENGTH = 40
-step = 3
-sentences = []
-next_chars = []
-for i in range(0, len(text) - SEQUENCE_LENGTH, step):
-    sentences.append(text[i: i + SEQUENCE_LENGTH])
-    next_chars.append(text[i + SEQUENCE_LENGTH])
-print(f'num training examples: {len(sentences)}')
-
-X = np.zeros((len(sentences), SEQUENCE_LENGTH, len(chars)), dtype=np.bool)
-y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
-for i, sentence in enumerate(sentences):
-    for t, char in enumerate(sentence):
-        X[i, t, char_indices[char]] = 1
-    y[i, char_indices[next_chars[i]]] = 1
-
 if should_load:
     model = load_model(model_files_title + '-model.h5')
     history = pickle.load(open(model_files_title + "-history.p", "rb"))
 else:
+    step = 300
+    sentences = []
+    next_chars = []
+
+    operations_texts = text.split('\r\noperation')
+    for operation_index, operation_text in enumerate(operations_texts):
+        if operation_index != 0:
+            operations_texts[operation_index] = 'operation' + operation_text
+        for i in range(3, len(operation_text), step):
+            sentences.append(operation_text[max(0, i - 200): i - 1])
+            next_chars.append(operation_text[i])
+    print(f'num training examples: {len(sentences)}')
+
+    X = []  # np.zeros((len(sentences), None, len(chars)), dtype=np.bool)
+    y = []  # np.zeros((len(sentences), len(chars)), dtype=np.bool)
+
+    for i, sentence in enumerate(sentences):
+        tX = np.zeros((len(sentence), len(chars)), dtype=np.bool)
+        for t, char in enumerate(sentence):
+            tX[t, char_indices[char]] = 1
+        ty = np.zeros((len(chars)), dtype=np.bool)
+        ty[char_indices[next_chars[i]]] = 1
+        X.append(tX.tolist())
+        y.append(ty.tolist())
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=1000)
+
     model = Sequential()
-    model.add(LSTM(128, input_shape=(SEQUENCE_LENGTH, len(chars))))
+    model.add(LSTM(128, input_shape=(None, len(chars)), batch_size=1, stateful=True))
     model.add(Dense(len(chars)))
     model.add(Activation('softmax'))
 
     optimizer = RMSprop(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
+    model.summary()
 
-
-
-    history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
+    history = model.fit(X_train, y_train
+                        , batch_size=1
+                        , epochs=20
+                        , validation_data=(X_test, y_test)
+                        , shuffle=True).history
 
     if should_save:
         model.save(model_files_title + '-model.h5')
