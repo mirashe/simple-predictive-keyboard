@@ -13,6 +13,8 @@ import seaborn as sns
 from pylab import rcParams
 import re
 from sklearn.model_selection import train_test_split
+from keras.preprocessing.sequence import TimeseriesGenerator
+from keras.preprocessing.sequence import pad_sequences
 
 # %matplotlib inline
 
@@ -42,32 +44,45 @@ if should_load:
     model = load_model(model_files_title + '-model.h5')
     history = pickle.load(open(model_files_title + "-history.p", "rb"))
 else:
-    step = 300
-    sentences = []
-    next_chars = []
+    sentences = text.split('\r\noperation')
+    sentences_max_len = 0
+    for sentence_index, sentence in enumerate(sentences):
+        if sentence_index != 0:
+            sentences[sentence_index] = 'operation' + sentence
+        if sentences_max_len < len(sentences[sentence_index]):
+            sentences_max_len = len(sentences[sentence_index])
 
-    operations_texts = text.split('\r\noperation')
-    for operation_index, operation_text in enumerate(operations_texts):
-        if operation_index != 0:
-            operations_texts[operation_index] = 'operation' + operation_text
-        for i in range(3, len(operation_text), step):
-            sentences.append(operation_text[max(0, i - 200): i - 1])
-            next_chars.append(operation_text[i])
-    print(f'num training examples: {len(sentences)}')
+    #    data_gens = []
+    #    for i, sentence in enumerate(sentences):
+    #        tX = np.zeros((sentences_max_len, len(chars)), dtype=np.bool)
+    #        for t, char in enumerate(sentence):
+    #            tX[t, char_indices[char]] = 1
+    #        data_gens.append(TimeseriesGenerator(tX, tX, batch_size=1, length=2))
+    #
+    #    model = Sequential()
+    #    model.add(LSTM(128, input_shape=(None, len(chars)), batch_size=1, stateful=True))
+    #    model.add(Dense(len(chars)))
+    #    model.add(Activation('softmax'))
+    #
+    #    optimizer = RMSprop(lr=0.01)
+    #    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    #
+    #    model.summary()
+    #
+    #    history = model.fit_generator(data_gens[0]
+    #                        , epochs=1
+    #                        , shuffle=False).history
+    #
 
-    X = []  # np.zeros((len(sentences), None, len(chars)), dtype=np.bool)
-    y = []  # np.zeros((len(sentences), len(chars)), dtype=np.bool)
+
+    X = np.zeros((len(sentences), sentences_max_len, len(chars)), dtype=np.bool)
+    y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
 
     for i, sentence in enumerate(sentences):
-        tX = np.zeros((len(sentence), len(chars)), dtype=np.bool)
         for t, char in enumerate(sentence):
-            tX[t, char_indices[char]] = 1
-        ty = np.zeros((len(chars)), dtype=np.bool)
-        ty[char_indices[next_chars[i]]] = 1
-        X.append(tX.tolist())
-        y.append(ty.tolist())
+            X[i, t, char_indices[char]] = True
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=1000)
+    data_gen = TimeseriesGenerator(X, X, batch_size=1, length=2)
 
     model = Sequential()
     model.add(LSTM(128, input_shape=(None, len(chars)), batch_size=1, stateful=True))
@@ -79,11 +94,9 @@ else:
 
     model.summary()
 
-    history = model.fit(X_train, y_train
-                        , batch_size=1
-                        , epochs=20
-                        , validation_data=(X_test, y_test)
-                        , shuffle=True).history
+    history = model.fit_generator(data_gen
+                        , epochs=1
+                        , shuffle=False).history
 
     if should_save:
         model.save(model_files_title + '-model.h5')
