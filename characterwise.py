@@ -31,7 +31,10 @@ text = open(input_file_path).read().lower()
 text = re.sub(' +', ' ', text)
 text = re.sub('( *[\r\n])+', '\r\n', text)
 
-
+operations_texts = text.split('\r\noperation')
+for operation_index, operation_text in enumerate(operations_texts):
+    if operation_index != 0:
+         operations_texts[operation_index] = 'operation' + operation_text
 
 # print('trimmed text: ', text)
 
@@ -45,9 +48,10 @@ SEQUENCE_LENGTH = 40
 step = 3
 sentences = []
 next_chars = []
-for i in range(0, len(text) - SEQUENCE_LENGTH, step):
-    sentences.append(text[i: i + SEQUENCE_LENGTH])
-    next_chars.append(text[i + SEQUENCE_LENGTH])
+for operation_index, operation_text in enumerate(operations_texts):
+    for i in range(0, len(operation_text) - SEQUENCE_LENGTH, step):
+        sentences.append(operation_text[i: i + SEQUENCE_LENGTH])
+        next_chars.append(operation_text[i + SEQUENCE_LENGTH])
 print(f'num training examples: {len(sentences)}')
 
 sentences_equalized_length = SEQUENCE_LENGTH
