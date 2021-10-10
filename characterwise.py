@@ -16,7 +16,7 @@ import re
 # %matplotlib inline
 
 should_save = not True
-should_load = True
+should_load = not True
 input_file_path = 'uniface-code-samples-01.txt'
 model_files_title = 'characterwise-uniface-simple'
 
@@ -50,11 +50,13 @@ for i in range(0, len(text) - SEQUENCE_LENGTH, step):
     next_chars.append(text[i + SEQUENCE_LENGTH])
 print(f'num training examples: {len(sentences)}')
 
-X = np.zeros((len(sentences), SEQUENCE_LENGTH, len(chars)), dtype=np.bool)
+sentences_equalized_length = SEQUENCE_LENGTH
+
+X = np.zeros((len(sentences), sentences_equalized_length, len(chars)), dtype=np.bool)
 y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
 for i, sentence in enumerate(sentences):
-    for t, char in enumerate(sentence):
-        X[i, t, char_indices[char]] = 1
+    for t, char in enumerate(reversed(sentence[-sentences_equalized_length:])):
+        X[i, sentences_equalized_length-t-1, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
 if should_load:
@@ -62,15 +64,12 @@ if should_load:
     history = pickle.load(open(model_files_title + "-history.p", "rb"))
 else:
     model = Sequential()
-    model.add(LSTM(128, input_shape=(SEQUENCE_LENGTH, len(chars))))
+    model.add(LSTM(128, input_shape=(sentences_equalized_length, len(chars))))
     model.add(Dense(len(chars)))
     model.add(Activation('softmax'))
 
     optimizer = RMSprop(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-
-
-
 
     history = model.fit(X, y, validation_split=0.05, batch_size=128, epochs=20, shuffle=True).history
 
