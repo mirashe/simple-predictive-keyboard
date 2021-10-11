@@ -10,6 +10,7 @@ import heapq
 import seaborn as sns
 from pylab import rcParams
 import re
+from colorama import Fore
 
 should_save = not True
 should_load = True
@@ -79,35 +80,6 @@ else:
         model.save(model_files_title + '-model.h5')
         pickle.dump(history, open(model_files_title + '-history.p', "wb"))
 
-
-def predict_completions(sentence):
-    sentence_matrix = np.zeros((1, SENTENCES_EQUALIZED_LENGTH, len(chars)), dtype=np.bool)
-    for t, char in enumerate(reversed(sentence[-SENTENCES_EQUALIZED_LENGTH:])):
-        sentence_matrix[0, SENTENCES_EQUALIZED_LENGTH-t-1, char_indices[char]] = 1
-
-    predicted_text = ""
-
-    for prediction_index in range(200):
-        new_prediction = model.predict(sentence_matrix)[0]
-        if max(new_prediction) < 0.15:
-            break
-        number_of_guesses = 1
-        best_predictions_indices = heapq.nlargest(number_of_guesses, range(new_prediction.size), new_prediction.take)
-        best_predictions = np.array(chars)[best_predictions_indices]
-        predicted_text += best_predictions[0]
-
-        new_char_matrix = np.zeros((1, 1, len(chars)), dtype=np.bool)
-        new_char_matrix[0, 0, char_indices[best_predictions[0]]] = 1
-
-        sentence_matrix = np.concatenate((sentence_matrix[0:1, 1:SENTENCES_EQUALIZED_LENGTH, :], new_char_matrix), axis=1)
-
-    return predicted_text
-
-
-input_sample = operations_texts[3][0:40]
-print("Input sample: \r\n", input_sample)
-print("Prediction sample: \r\n", predict_completions(input_sample))
-
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
 plt.plot(history['accuracy'])
@@ -125,3 +97,34 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
+
+
+def predict_completions(sentence):
+    sentence_matrix = np.zeros((1, SENTENCES_EQUALIZED_LENGTH, len(chars)), dtype=np.bool)
+    for t, char in enumerate(reversed(sentence[-SENTENCES_EQUALIZED_LENGTH:])):
+        if char in char_indices:
+            sentence_matrix[0, SENTENCES_EQUALIZED_LENGTH-t-1, char_indices[char]] = 1
+
+    for prediction_index in range(200):
+        new_prediction = model.predict(sentence_matrix)[0]
+        if max(new_prediction) < 0.20:
+            break
+        number_of_guesses = 1
+        best_predictions_indices = heapq.nlargest(number_of_guesses, range(new_prediction.size), new_prediction.take)
+        best_predictions = np.array(chars)[best_predictions_indices]
+        if best_predictions[0] != '\r':
+            print(best_predictions[0], end="")
+
+        new_char_matrix = np.zeros((1, 1, len(chars)), dtype=np.bool)
+        new_char_matrix[0, 0, char_indices[best_predictions[0]]] = 1
+
+        sentence_matrix = np.concatenate((sentence_matrix[0:1, 1:SENTENCES_EQUALIZED_LENGTH, :], new_char_matrix), axis=1)
+
+
+while True:
+    print(f"\r\n\r\n{Fore.YELLOW}Input:")
+    input_sample = input()  # operations_texts[3][0:40]
+    if not input_sample:
+        break
+    print(f"{Fore.YELLOW}Prediction: \r\n{Fore.WHITE}", input_sample, end="")
+    predict_completions(input_sample)
