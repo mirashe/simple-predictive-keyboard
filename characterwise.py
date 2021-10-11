@@ -80,18 +80,19 @@ else:
         pickle.dump(history, open(model_files_title + '-history.p', "wb"))
 
 
-def predict_completions(sentence, prediction_length):
+def predict_completions(sentence):
     sentence_matrix = np.zeros((1, SENTENCES_EQUALIZED_LENGTH, len(chars)), dtype=np.bool)
     for t, char in enumerate(reversed(sentence[-SENTENCES_EQUALIZED_LENGTH:])):
         sentence_matrix[0, SENTENCES_EQUALIZED_LENGTH-t-1, char_indices[char]] = 1
 
     predicted_text = ""
 
-    for prediction_index in range(prediction_length):
-        predictions_for_first_sample = model.predict(sentence_matrix)[0]
+    for prediction_index in range(200):
+        new_prediction = model.predict(sentence_matrix)[0]
+        if max(new_prediction) < 0.15:
+            break
         number_of_guesses = 1
-        best_predictions_indices = heapq.nlargest(number_of_guesses, range(predictions_for_first_sample.size),
-                                                  predictions_for_first_sample.take)
+        best_predictions_indices = heapq.nlargest(number_of_guesses, range(new_prediction.size), new_prediction.take)
         best_predictions = np.array(chars)[best_predictions_indices]
         predicted_text += best_predictions[0]
 
@@ -105,7 +106,7 @@ def predict_completions(sentence, prediction_length):
 
 input_sample = operations_texts[3][0:40]
 print("Input sample: \r\n", input_sample)
-print("Prediction sample: \r\n", predict_completions(input_sample, 120))
+print("Prediction sample: \r\n", predict_completions(input_sample))
 
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
