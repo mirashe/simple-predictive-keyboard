@@ -9,13 +9,13 @@ import pickle
 import heapq
 import seaborn as sns
 from pylab import rcParams
-import re
 from colorama import Fore
+import codeReader
 
 should_save = not True
 should_load = True
 input_file_path = 'uniface-code-samples-01.txt'
-model_files_title = 'CW-U-SO'
+model_files_title = 'trained_with_all_tests'
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -24,25 +24,32 @@ sns.set(style='whitegrid', palette='muted', font_scale=1.5)
 
 rcParams['figure.figsize'] = 12, 5
 
-text = open(input_file_path).read().lower()
-text = re.sub(' +', ' ', text)
-text = re.sub('( *[\r\n])+', '\r\n', text)
-
-operations_texts = text.split('\r\noperation')
-for operation_index, operation_text in enumerate(operations_texts):
-    if operation_index != 0:
-         operations_texts[operation_index] = 'operation' + operation_text
+# operations_texts = text.split('\r\noperation')
+# for operation_index, operation_text in enumerate(operations_texts):
+#     if operation_index != 0:
+#          operations_texts[operation_index] = 'operation' + operation_text
 
 # print('trimmed text: ', text)
+tests_path = '..\\..\\..\\uniface\\qa\\urt\\tests'
+code_directories = ['libprc', 'libinc', 'ent', 'cpt', 'aps']
 
-chars = sorted(list(set(text)))
+operations_texts = codeReader.read_xml_directories(tests_path, code_directories)
+
+
+# chars = sorted(list(set(text)))
+
+char_set = set()
+for opt in operations_texts:
+    char_set = set.union(char_set, set(opt))
+
+chars = sorted(list(char_set))
 char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
 print(f'unique chars: {len(chars)}')
 
 SENTENCES_MINIMUM_LENGTH = 1
-step = 3
+step = 300
 sentences = []
 next_chars = []
 
@@ -107,7 +114,7 @@ def predict_completions(sentence):
 
     for prediction_index in range(200):
         new_prediction = model.predict(sentence_matrix)[0]
-        if max(new_prediction) < 0.20:
+        if max(new_prediction) < 0.10:
             break
         number_of_guesses = 1
         best_predictions_indices = heapq.nlargest(number_of_guesses, range(new_prediction.size), new_prediction.take)
